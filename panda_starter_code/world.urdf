@@ -6,18 +6,18 @@
 		<model dir="./resources" path="panda_arm.urdf" name="panda_arm" />
 	</robot>
 
-	<static_object name="Wall">
-		<origin xyz="1.0 0.0 0.5" rpy="0 0 0" />
+	<static_object name="Crokiboard">
+		<origin xyz="0.6 0.0 0.4" rpy="0 0 0" />
 	    <collision>
 	        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
 	        <geometry>
-	            <box size="0.05 0.6 1.5" />
+	            <cylinder length="0.1" radius="0.5" />
 	        </geometry>
 	    </collision>
 	    <visual>
 	        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
 	        <geometry>
-	            <box size="0.05 0.6 1.5" />
+	            <cylinder length="0.02" radius="0.3" />
 	        </geometry>
 	        <material name="material_gray">
 		        <color rgba="0.6 0.6 0.6 1.0" />
