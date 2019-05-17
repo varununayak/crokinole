@@ -1,6 +1,0 @@
-/home/varun/sai2/apps/crokinole/build/CMakeFiles/edit_cache.dir
-/home/varun/sai2/apps/crokinole/build/CMakeFiles/rebuild_cache.dir
-/home/varun/sai2/apps/crokinole/build/panda_starter_code/CMakeFiles/edit_cache.dir
-/home/varun/sai2/apps/crokinole/build/panda_starter_code/CMakeFiles/simviz_panda.dir
-/home/varun/sai2/apps/crokinole/build/panda_starter_code/CMakeFiles/rebuild_cache.dir
-/home/varun/sai2/apps/crokinole/build/panda_starter_code/CMakeFiles/controller_panda.dir
