@@ -12,6 +12,12 @@
           <mesh filename="../../../Model/meshes/visual/link0.obj"/>
         </geometry>
       </visual>
+      <visual>
+          <origin xyz="0.6 0 0.3-0.0122" rpy="-1.571 0 -1.571" />
+        <geometry>
+          <mesh filename="../../../Model/meshes/crokiboard.obj"/>
+        </geometry>
+      </visual>
 <!--       <collision>
         <geometry>
           <mesh filename="../../../Model/meshes/collision/link0.obj"/>
