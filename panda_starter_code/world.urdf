@@ -7,21 +7,19 @@
 	</robot>
 
 	<static_object name="Crokiboard">
-		<origin xyz="0.6 0.0 0.4" rpy="0 0 0" />
-	    <collision>
+		<origin xyz="0.6 0.0 0.3" rpy="0 0 -1.57" />
+	    <!-- <collision>
 	        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
 	        <geometry>
 	            <cylinder length="0.1" radius="0.5" />
 	        </geometry>
-	    </collision>
+	    </collision> -->
 	    <visual>
 	        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
 	        <geometry>
-	            <cylinder length="0.02" radius="0.3" />
-	        </geometry>
-	        <material name="material_gray">
-		        <color rgba="0.6 0.6 0.6 1.0" />
-	        </material>
+	            <cylinder length = "0.01" radius = "0.4" />
+<!-- 	            <mesh filename="../../../Model/meshes/crokiboard.obj"/>
+ -->	        </geometry>	        
 	    </visual>
 	</static_object>
 

@@ -1,0 +1,33 @@
+<robot
+  name="crokiboard">
+  <link
+    name="crokiboardlink1">
+    <inertial>
+      <origin
+        xyz="1.3878E-17 -0.0073321 -0.0122"
+        rpy="0 0 0" />
+      <mass
+        value="4.4222" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="../../../Model/meshes/crokiboard.obj" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.2 0.2 1" />
+      </material>
+    </link>
+</robot>
