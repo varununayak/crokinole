@@ -171,13 +171,12 @@ int main() {
 			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
 			{	
 				mode = EXECUTE_MODE;
-				printf("Goint into EXECUTE_MODE\n");
+				printf("Going into EXECUTE_MODE\n");
 			}
 
 		}
 		else if(mode == EXECUTE_MODE)
-		{	
-
+		{		
 
 			// update model
 			if(flag_simulation)
@@ -200,17 +199,19 @@ int main() {
 			if(state == JOINT_CONTROLLER)
 			{
 				// update task model and set hierarchy
+				joint_task->_desired_position = q_init_desired;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
+				joint_task->_kp = 250.0;
 
 				// compute torques
 				joint_task->computeTorques(joint_task_torques);
-
+				
 				command_torques = joint_task_torques;
 
 				if( (robot->_q - q_init_desired).norm() < 0.15 )
 				{
-					posori_task->reInitializeTask();
+					posori_task->reInitializeTask();					
 					posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
 					posori_task->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
 
@@ -229,6 +230,8 @@ int main() {
 					printf("Going into WAIT_MODE..\n");
 					mode = WAIT_MODE;
 					redis_client.set(MODE_CHANGE_KEY,"wait");
+					state = JOINT_CONTROLLER;
+					joint_task->_desired_position = q_init_desired;
 				}
 
 				// update task model and set hierarchy
