@@ -23,10 +23,15 @@ const string robot_file = "./resources/panda_arm.urdf";
 #define JOINT_CONTROLLER      0
 #define POSORI_CONTROLLER     1
 
+#define WAIT_MODE 0
+#define EXECUTE_MODE 1
+
+int mode = WAIT_MODE;
+
 int state = JOINT_CONTROLLER;
 
 //function prototypes
-bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot);
+bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha);
 
 
 // redis keys:
@@ -41,6 +46,9 @@ std::string JOINT_TORQUES_COMMANDED_KEY;
 std::string MASSMATRIX_KEY;
 std::string CORIOLIS_KEY;
 std::string ROBOT_GRAVITY_KEY;
+
+//state
+std::string MODE_CHANGE_KEY = "modechange";
 
 unsigned long long controller_counter = 0;
 
@@ -134,7 +142,11 @@ int main() {
 
 	//initialize position and velocity in cartesian space
 	Vector3d x;//quantity to store current task space position
-	Vector3d xdot;//quantiy to store current task space velocity
+	Vector3d xdot;//quantiy to store current task space velocity]
+	Vector3d xddot; //linear acceleration
+	Vector3d omega;
+	Vector3d alpha;
+
 
 
 	while (runloop) {
@@ -149,72 +161,95 @@ int main() {
 		//update cartesian position of the robot from joint angles
 		robot->position(x,control_link,control_point); //position of end effector
 		robot->linearVelocity(xdot,control_link,control_point); //velocity of end effector 
+		robot->linearAcceleration(xddot,control_link,control_point);
+		robot->angularVelocity(omega,control_link);
+		robot->angularAcceleration(alpha,control_link);
 
-		// update model
-		if(flag_simulation)
-		{
-			robot->updateModel();
-		}
-		else
-		{
-			robot->updateKinematics();
-			robot->_M = redis_client.getEigenMatrixJSON(MASSMATRIX_KEY);
-			if(inertia_regularization)
-			{
-				robot->_M(4,4) += 0.07;
-				robot->_M(5,5) += 0.07;
-				robot->_M(6,6) += 0.07;
-			}
-			robot->_M_inv = robot->_M.inverse();
-		}
-
-		if(state == JOINT_CONTROLLER)
-		{
-			// update task model and set hierarchy
-			N_prec.setIdentity();
-			joint_task->updateTaskModel(N_prec);
-
-			// compute torques
-			joint_task->computeTorques(joint_task_torques);
-
-			command_torques = joint_task_torques;
-
-			if( (robot->_q - q_init_desired).norm() < 0.15 )
-			{
-				posori_task->reInitializeTask();
-				posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
-				posori_task->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
-
-				joint_task->reInitializeTask();
-				joint_task->_kp = 0;
-
-				state = POSORI_CONTROLLER;
-			}
-		}
-
-		else if(state == POSORI_CONTROLLER)
+		if(mode == WAIT_MODE)
 		{	
-			//if the robot reaches the desired position and is at rest, come out of the loop
-			if(robotReachedGoal(x,posori_task->_desired_position,xdot)) break;
+			command_torques.setZero();
 
-			// update task model and set hierarchy
-			N_prec.setIdentity();
-			posori_task->updateTaskModel(N_prec);
-			N_prec = posori_task->_N;
-			joint_task->updateTaskModel(N_prec);
+			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
+			{	
+				mode = EXECUTE_MODE;
+				printf("Goint into EXECUTE_MODE\n");
+			}
 
-			// compute torques
-			posori_task->computeTorques(posori_task_torques);
-			joint_task->computeTorques(joint_task_torques);
-
-			command_torques = posori_task_torques + joint_task_torques;
 		}
+		else if(mode == EXECUTE_MODE)
+		{	
 
-		// send to redis
-		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 
-		controller_counter++;
+			// update model
+			if(flag_simulation)
+			{
+				robot->updateModel();
+			}
+			else
+			{
+				robot->updateKinematics();
+				robot->_M = redis_client.getEigenMatrixJSON(MASSMATRIX_KEY);
+				if(inertia_regularization)
+				{
+					robot->_M(4,4) += 0.07;
+					robot->_M(5,5) += 0.07;
+					robot->_M(6,6) += 0.07;
+				}
+				robot->_M_inv = robot->_M.inverse();
+			}
 
+			if(state == JOINT_CONTROLLER)
+			{
+				// update task model and set hierarchy
+				N_prec.setIdentity();
+				joint_task->updateTaskModel(N_prec);
+
+				// compute torques
+				joint_task->computeTorques(joint_task_torques);
+
+				command_torques = joint_task_torques;
+
+				if( (robot->_q - q_init_desired).norm() < 0.15 )
+				{
+					posori_task->reInitializeTask();
+					posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
+					posori_task->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
+
+					joint_task->reInitializeTask();
+					joint_task->_kp = 0;
+
+					state = POSORI_CONTROLLER;
+				}
+			}
+
+			else if(state == POSORI_CONTROLLER)
+			{	
+				//if the robot reaches the desired position and is at rest, come out of the loop
+				if(robotReachedGoal(x,posori_task->_desired_position,xdot,xddot,omega,alpha))
+				{	
+					printf("Going into WAIT_MODE..\n");
+					mode = WAIT_MODE;
+					redis_client.set(MODE_CHANGE_KEY,"wait");
+				}
+
+				// update task model and set hierarchy
+				N_prec.setIdentity();
+				posori_task->updateTaskModel(N_prec);
+				N_prec = posori_task->_N;
+				joint_task->updateTaskModel(N_prec);
+
+				// compute torques
+				posori_task->computeTorques(posori_task_torques);
+				joint_task->computeTorques(joint_task_torques);
+
+				command_torques = posori_task_torques + joint_task_torques;
+			}
+
+			// send to redis
+			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
+
+			controller_counter++;
+		}
 	}
 
 	command_torques.setZero();
@@ -230,10 +265,10 @@ int main() {
 }
 
 
-bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot)
+bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha)
 {
 	double epsilon = 0.001;
-	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm();
+	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
 	if(error_norm<epsilon)
 	{	
 		printf("Reached Goal \n");
