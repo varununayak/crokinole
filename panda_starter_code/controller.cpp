@@ -167,8 +167,7 @@ int main() {
 
 		if(mode == WAIT_MODE)
 		{	
-			command_torques.setZero();
-
+			
 			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
 			{	
 				mode = EXECUTE_MODE;
