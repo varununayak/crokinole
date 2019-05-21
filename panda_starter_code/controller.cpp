@@ -213,7 +213,7 @@ int main() {
 				{
 					posori_task->reInitializeTask();					
 					posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
-					posori_task->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
+					posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
 
 					joint_task->reInitializeTask();
 					joint_task->_kp = 0;
