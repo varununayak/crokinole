@@ -25,6 +25,10 @@ const string robot_file = "./resources/panda_arm.urdf";
 
 int state = JOINT_CONTROLLER;
 
+//function prototypes
+bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot);
+
+
 // redis keys:
 // - read:
 std::string JOINT_ANGLES_KEY;
@@ -127,6 +131,12 @@ int main() {
 	double start_time = timer.elapsedTime(); //secs
 	bool fTimerDidSleep = true;
 
+
+	//initialize position and velocity in cartesian space
+	Vector3d x;//quantity to store current task space position
+	Vector3d xdot;//quantiy to store current task space velocity
+
+
 	while (runloop) {
 		// wait for next scheduled loop
 		timer.waitForNextLoop();
@@ -135,6 +145,10 @@ int main() {
 		// read robot state from redis
 		robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
 		robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
+
+		//update cartesian position of the robot from joint angles
+		robot->position(x,control_link,control_point); //position of end effector
+		robot->linearVelocity(xdot,control_link,control_point); //velocity of end effector 
 
 		// update model
 		if(flag_simulation)
@@ -179,7 +193,10 @@ int main() {
 		}
 
 		else if(state == POSORI_CONTROLLER)
-		{
+		{	
+			//if the robot reaches the desired position and is at rest, come out of the loop
+			if(robotReachedGoal(x,posori_task->_desired_position,xdot)) break;
+
 			// update task model and set hierarchy
 			N_prec.setIdentity();
 			posori_task->updateTaskModel(N_prec);
@@ -200,6 +217,8 @@ int main() {
 
 	}
 
+	command_torques.setZero();
+
 	double end_time = timer.elapsedTime();
     std::cout << "\n";
     std::cout << "Controller Loop run time  : " << end_time << " seconds\n";
@@ -208,4 +227,17 @@ int main() {
 
 
 	return 0;
+}
+
+
+bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot)
+{
+	double epsilon = 0.001;
+	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm();
+	if(error_norm<epsilon)
+	{	
+		printf("Reached Goal \n");
+		return true;
+	} 
+	return false;
 }
