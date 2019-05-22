@@ -32,6 +32,8 @@ int state = JOINT_CONTROLLER;
 
 //function prototypes
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha);
+Vector3d calculatePointInTrajectory(double t);
+bool inRange(double t, double lower, double upper);
 
 
 // redis keys:
@@ -167,7 +169,7 @@ int main() {
 
 		if(mode == WAIT_MODE)
 		{	
-			
+			controller_counter = 0;
 			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
 			{	
 				mode = EXECUTE_MODE;
@@ -210,10 +212,15 @@ int main() {
 				command_torques = joint_task_torques;
 
 				if( (robot->_q - q_init_desired).norm() < 0.15 )
-				{
+				{	
+					cout << "Reached JOINT Goal" << endl;
 					posori_task->reInitializeTask();					
-					posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
-					posori_task->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
+					posori_task->_desired_position = calculatePointInTrajectory(0);
+					Matrix3d RotationMatrix;
+					RotationMatrix << -1,0,0
+									   ,0,1,0,
+									    0,0,1;
+					posori_task->_desired_orientation = RotationMatrix;
 
 					joint_task->reInitializeTask();
 					joint_task->_kp = 0;
@@ -225,7 +232,8 @@ int main() {
 			else if(state == POSORI_CONTROLLER)
 			{	
 				//if the robot reaches the desired position and is at rest, come out of the loop
-				if(robotReachedGoal(x,posori_task->_desired_position,xdot,xddot,omega,alpha))
+				
+				if(robotReachedGoal(x,calculatePointInTrajectory(1000),xdot,xddot,omega,alpha))
 				{	
 					printf("Going into WAIT_MODE..\n");
 					mode = WAIT_MODE;
@@ -239,6 +247,14 @@ int main() {
 				posori_task->updateTaskModel(N_prec);
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
+
+				//update task space point in traj
+				posori_task->_desired_position = calculatePointInTrajectory(controller_counter*0.001);
+				Matrix3d RotationMatrix;
+					RotationMatrix << -1,0,0
+									   ,0,1,0,
+									    0,0,1;
+				posori_task->_desired_orientation = RotationMatrix;
 
 				// compute torques
 				posori_task->computeTorques(posori_task_torques);
@@ -270,11 +286,42 @@ int main() {
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha)
 {
 	double epsilon = 0.001;
-	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
+	double error_norm = 10*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
 	if(error_norm<epsilon)
 	{	
-		printf("Reached Goal \n");
+		printf("Reached POSORI Goal \n");
 		return true;
 	} 
 	return false;
+}
+
+Vector3d calculatePointInTrajectory(double t)
+{	
+	Vector3d x; 
+
+
+	if(inRange(t,0,5))
+	{
+		x(0) = 0.32 + (0.50  -  (0.32) )*(t-0)/(5); 
+		x(1) = -0.35 + (0.35 - (-0.35)  )*(t-0)/(5); 
+		x(2) = 0.65 + (0.60  -  0.65    ) *(t-0)/(5); 
+
+	}
+	else
+	{	
+		t = 5;
+		x(0) = 0.32 + (0.50  -  (0.32) )*(t-0)/(5); 
+		x(1) = -0.35 + (0.35 - (-0.35)  )*(t-0)/(5); 
+		x(2) = 0.65 + (0.60  -  0.65    ) *(t-0)/(5);
+		
+	}
+
+	return x;
+}
+
+
+//return true if t lies in between lower and upper limits
+bool inRange(double t, double lower, double upper)
+{
+	return (  (t < upper) &&  (t >= lower) );
 }
