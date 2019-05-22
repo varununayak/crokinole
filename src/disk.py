@@ -24,9 +24,15 @@ objects
 
 def collide(moving_disk, stationary_disk):
     u = moving_disk.direction # unit vector
+
+    if np.array_equal(u, np.array([0, 0])): # moving_disk is not moving
+        return None
     np.testing.assert_almost_equal(np.linalg.norm(u), 1)
 
-    l = np.dot(-moving_disk.origin + stationary_disk.origin, u) * u
+    projected_dist = np.dot(-moving_disk.origin + stationary_disk.origin, u)
+    if projected_dist < 0: # disk moving in opposite direction
+        return None
+    l = projected_dist * u
     n = -stationary_disk.origin + moving_disk.origin + l
     
     if (moving_disk.r + stationary_disk.r) <= np.linalg.norm(n):
