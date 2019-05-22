@@ -33,6 +33,9 @@ int state = JOINT_CONTROLLER;
 
 //function prototypes
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha);
+Vector3d calculatePointInTrajectory(double t);
+bool inRange(double t, double lower, double upper);
+Matrix3d calculateRotationInTrajectory(double t);
 
 
 // redis keys:
@@ -166,6 +169,10 @@ int main() {
 		robot->angularVelocity(omega,control_link);
 		robot->angularAcceleration(alpha,control_link);
 
+		//calculate current time;
+		double dt = 0.001;
+		double t = controller_counter*dt;
+
 		if(mode == WAIT_MODE)
 		{	
 			
@@ -211,14 +218,12 @@ int main() {
 				command_torques = joint_task_torques;
 
 				if( (robot->_q - q_init_desired).norm() < 0.15 )
-				{
+				{	
+					cout << "Reached JOINT Goal" << endl;
 					posori_task->reInitializeTask();					
-					posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
+					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
-					Matrix3d rot; rot << 1,0,0,
-										0,0,-1,
-										0,1,0;
-					posori_task->_desired_orientation = rot;
+					posori_task->_desired_orientation = calculateRotationInTrajectory(t);
 					joint_task->reInitializeTask();
 					joint_task->_kp = 0;
 
@@ -229,7 +234,7 @@ int main() {
 			else if(state == POSORI_CONTROLLER)
 			{	
 				//if the robot reaches the desired position and is at rest, come out of the loop
-				if(robotReachedGoal(x,posori_task->_desired_position,xdot,xddot,omega,alpha))
+				if(robotReachedGoal(x,calculatePointInTrajectory(100),xdot,xddot,omega,alpha))	//100 is arbitrarily large, represents last point in traj
 				{	
 					printf("Going into WAIT_MODE..\n");
 					mode = WAIT_MODE;
@@ -243,6 +248,9 @@ int main() {
 				posori_task->updateTaskModel(N_prec);
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
+
+				posori_task->_desired_position = calculatePointInTrajectory(t);
+				posori_task->_desired_orientation = calculateRotationInTrajectory(t);
 
 				// compute torques
 				posori_task->computeTorques(posori_task_torques);
@@ -281,4 +289,74 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 		return true;
 	} 
 	return false;
+}
+
+
+/*
+This function returns the desired point in the operational space
+that the robot needs to track. The plan is to divide it into sections 
+parametrized by 't'.
+
+From calibration and shot planner, we need (all expressed in robot frame)
+1) Home position (xh, yh, zh)
+2) Position of cue coin (xc,yc,zc) (also pre-determined)
+3) Desired position of cue coin (xcd, ycd, zcd) (get from  shot planner over redis when mode changes)
+4) Backup and Shoot Trajectory expressed in the robot frame
+*/
+Vector3d calculatePointInTrajectory(double t)
+{	
+	Vector3d xh; xh << 0.32,-0.35,0.65;	//calibrate this
+	Vector3d xc; xc << 0.5,0.35,0.60;	//calibrate this
+	Vector3d xcd; //calculate this
+
+	Vector3d x; 
+
+	if(inRange(t,0,5))
+	{
+		//set positions according to analytical functions
+		x =  xh + (xc  -  xh )*(t-0)/(5); 
+		
+
+	}
+	else
+	{	
+		x = xc;	
+	}
+
+	return x;
+}
+
+
+/*
+From calibration and shot planner, we need:
+1) Orientation in home position (point straight and flat)
+2) Angle to which to turn to once we reach the cue coin position (get from shot planner over redis)
+3) Angle to which to point to for the backup and shot (get from shot planner over redis)
+*/
+Matrix3d calculateRotationInTrajectory(double t)
+{
+	Matrix3d rot;
+
+	if(inRange(t,0,5))
+	{
+	 rot << 1,0,0,
+	 		0,0,-1,
+	 		0,1,0;
+	 }
+	 else  //final orientation
+	 {
+	 	rot << 1,0,0,
+	 		0,0,-1,
+	 		0,1,0;
+	 }
+
+	 return rot;
+
+}
+
+
+//return true if t lies in between lower and upper limits
+bool inRange(double t, double lower, double upper)
+{
+	return (  (t < upper) &&  (t >= lower) );
 }
