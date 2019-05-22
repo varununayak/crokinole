@@ -301,7 +301,7 @@ From calibration and shot planner, we need (all expressed in robot frame)
 1) Home position (xh, yh, zh)
 2) Position of cue coin (xc,yc,zc) (also pre-determined)
 3) Desired position of cue coin (xcd, ycd, zcd) (get from  shot planner over redis when mode changes)
-4) Backup and Shoot Trajectory expressed in the robot frame
+4) Backup and Flick Trajectory expressed in the robot frame (get required params from shot planner and tranform it)
 */
 Vector3d calculatePointInTrajectory(double t)
 {	
@@ -329,7 +329,7 @@ Vector3d calculatePointInTrajectory(double t)
 
 /*
 From calibration and shot planner, we need:
-1) Orientation in home position (point straight and flat)
+1) Orientation in home position (point straight and flat maybe?)
 2) Angle to which to turn to once we reach the cue coin position (get from shot planner over redis)
 3) Angle to which to point to for the backup and shot (get from shot planner over redis)
 */
