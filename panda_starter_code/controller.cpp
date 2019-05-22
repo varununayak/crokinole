@@ -307,20 +307,39 @@ Vector3d calculatePointInTrajectory(double t)
 {	
 	Vector3d xh; xh << 0.32,-0.35,0.65;	//calibrate this
 	Vector3d xc; xc << 0.5,0.35,0.60;	//calibrate this
-	Vector3d xcd; //calculate this
+	Vector3d xcd; //calculate this - get from redis
+
+	// radius of the board in mm
+	double r=20.125/2; 
+	double t_start = 0;
+	double t_1 = 5;
 
 	Vector3d x; 
 
-	if(inRange(t,0,5))
+	if(inRange(t,t_start,t_1))
 	{
 		//set positions according to analytical functions
-		x =  xh + (xc  -  xh )*(t-0)/(5); 
-		
+		// x =  xh + (xc  -  xh )*(t-0)/(5);
 
+		// Move cue coin from home to desired position
+		double x0 = xh(1);
+		double y0 = xh(2);
+		double xf = xc(1);
+		double yf = xc(2);
+
+		double t0 = atan2(y0,x0);
+		double tf = atan2(yf,xf);
+
+		double old_range = t_1-t_start;
+		double new_range = tf - t0;
+		double new_t = (((t-0)*new_range)/old_range) + t0;
+
+		x << r*sin(new_t), r*cos(new_t), xh(3);
 	}
 	else
 	{	
-		x = xc;	
+		
+
 	}
 
 	return x;
