@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
 
 #include <signal.h>
 bool runloop = true;
@@ -213,8 +214,11 @@ int main() {
 				{
 					posori_task->reInitializeTask();					
 					posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
-					posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
-
+					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
+					Matrix3d rot; rot << 1,0,0,
+										0,0,-1,
+										0,1,0;
+					posori_task->_desired_orientation = rot;
 					joint_task->reInitializeTask();
 					joint_task->_kp = 0;
 
