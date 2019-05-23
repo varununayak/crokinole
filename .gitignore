@@ -36,3 +36,6 @@ bin/*
 
 #dump file
 *.rdb
+
+#python binary
+*.pyc
