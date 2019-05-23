@@ -41,27 +41,29 @@ G = np.matmul(AI,Tform)
 
 #-------WHAT ARE YOU CALIBRATING--------#
 
-#CALIB_CENTER = True
 CALIB_DEPTH = True
 
-
+CALIB_ANGLE = True;
 
 #-------CALIBRATION VALUES--------#
 
-offset_pixel_x = -13.15
-offset_pixel_y = 18.65
+offset_pixel_x = 14
+offset_pixel_y = -0.34
 
 #Depth in mm, scaling factor in bracket
-Depth = 736.00*(254.00/153.00)
+Depth = 1220
+
+theta = -0.03
 
 #---------------------------------#
 
 
 def isWhite(img,i):
 	avg = 0;
-
+	x = int(i[0])
+	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
-	avg = np.average(img[i[1]-CSD:i[1]+CSD,i[0]-CSD:i[0]+CSD])  #compute the average RGB value
+	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
 
 	if avg < WHITE_THRESHOLD:
 		return False		
@@ -72,11 +74,8 @@ def isWhite(img,i):
 def main():
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
-	cap = cv2.VideoCapture(2)	
+	cap = cv2.VideoCapture(0)	
 
-	# Define the codec and create VideoWriter object
-	fourcc = cv2.cv.CV_FOURCC(*'XVID')
-	out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
 
 	while(cap.isOpened()):
 	    ret, frame = cap.read()
@@ -89,7 +88,7 @@ def main():
 
 	    	img = cv2.medianBlur(img,9)
 
-	    	circles = cv2.HoughCircles(img,cv2.cv.CV_HOUGH_GRADIENT,1.9,10,param1=50,param2=30,minRadius=8,maxRadius=14)
+	    	circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1.9,10,param1=60,param2=40,minRadius=8,maxRadius=14)
 
 	    	if (circles is not None):
 
@@ -105,6 +104,13 @@ def main():
 
 		    			X = pixel_x_cam/focus_x*Depth
 		    			Y = pixel_y_cam/focus_y*Depth
+		    			
+		    			if(CALIB_ANGLE):
+		    				Xunrot = X;
+		    				X = np.cos(theta)*Xunrot - np.sin(theta)*Y
+		    				Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
+
+
 
 		    			if(CALIB_DEPTH):
 		    				print(X,Y,"Need 254 at the points") #x and y coordinates in pixels    			
@@ -116,7 +122,17 @@ def main():
 
 		    			#cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)	#red colour center marker for black (opponent)
 			
-
+			#draw reference lines
+			x1 =320+100
+			y1 =240+100
+			x0 =320-100
+			y0 =240-100
+			cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
+			x1 = 320+100
+			y1 = 240-100
+			x0 = 320-100
+			y0 = 240+100
+			cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
 			cv2.imshow('Crokinole Detected Coins',cimg)
 
 	        if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -125,8 +141,7 @@ def main():
 	        break
 
 	# Release everything if job is finished
-	cap.release()
-	out.release()
+	cap.release()	
 	cv2.destroyAllWindows()
 
 
