@@ -37,22 +37,40 @@ Tform = np.hstack( (R, t )	)
 Tform = np.vstack((Tform,[0,0,0,1]))
 G = np.matmul(AI,Tform)
 
+'''STEPS FOR CALIBRATION
+
+1)	Turn on the camera above the board and try to align the 
+	'X' of the camera with the board as well as possible. The goal
+	is not to match the centers perfectly but to ensure that the 
+	camera is facing perfectly downward toward the board. The 'X' helps.
+2)	Set CALIB_DEPTH and CALIB_ANGLE to False.
+3)	Put a white coin in the center and check the offset values. Update them.
+4)	Now set CALIB_DEPTH to True.
+5)	Place the coin in (254,0) of the board frame and check the X,Y values.
+	We want X^2 + Y^2 = 254^2. Tune the Depth using the formul D_tuned = 254*D_current/sqrt(X^2 + Y^2)
+6)  Once this is done, calculate theta as arctan(-Y/X). Note that the coin is still in 254,0.
+7)	Set CALIB_ANGLE to True and check if you now print out 254,0, or somewhere close to it.
+
+
+
+'''
+
 
 
 #-------WHAT ARE YOU CALIBRATING--------#
 
 CALIB_DEPTH = True
-
-CALIB_ANGLE = True;
+CALIB_ANGLE = True
 
 #-------CALIBRATION VALUES--------#
+#COPY THESE OVER TO CoinsUpdater.py
 
+#pixel center offset
 offset_pixel_x = 14
 offset_pixel_y = -0.34
 
-#Depth in mm, scaling factor in bracket
+#Depth in mm, theta in radian
 Depth = 1220
-
 theta = -0.03
 
 #---------------------------------#

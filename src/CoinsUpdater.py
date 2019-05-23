@@ -15,13 +15,13 @@ import cv2
 focus_x = 986.1724
 focus_y = 994.4793
 
+#pixel center offset
 offset_pixel_x = 14
 offset_pixel_y = -0.34
 
-#Depth in mm, scaling factor in bracket
+#Depth in mm, theta in radian
 Depth = 1220
 theta = -0.03
-
 
 
 #for colour of the coin
