@@ -36,17 +36,21 @@ CUE_POSITION_Y = 9;
 # gets position of image in camera pixels 
 # and returns the colour of the coin
 def isWhite(img,i):
-	avg = 0;
+	avg = 0
+	x = int(i[0])
+	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
-	avg = np.average(img[i[1]-CSD:i[1]+CSD,i[0]-CSD:i[0]+CSD])  #compute the average RGB value
+	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
 	if avg < WHITE_THRESHOLD:
 		return False		
 	return True
 
 def isBlack(img,i):
 	avg = 0;
+	x = int(i[0])
+	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
-	avg = np.average(img[i[1]-CSD:i[1]+CSD,i[0]-CSD:i[0]+CSD])  #compute the average RGB value 
+	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value 
 	if avg < BLACK_THRESHOLD:
 		return True		
 	return False
