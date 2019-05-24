@@ -15,12 +15,13 @@ import cv2
 focus_x = 986.1724
 focus_y = 994.4793
 
-#pixel offset of center of the board 
-offset_pixel_x = -13.15
-offset_pixel_y = 18.65
+#pixel center offset
+offset_pixel_x = 14
+offset_pixel_y = -0.34
 
-#Depth in mm, scaling factor in bracket
-Depth = 736.00*(254.00/153.00)
+#Depth in mm, theta in radian
+Depth = 1220
+theta = -0.03
 
 
 #for colour of the coin
@@ -28,8 +29,11 @@ WHITE_THRESHOLD = 160 #average value of pixes threshold to distinguish white fro
 BLACK_THRESHOLD = 120
 CSD = 5	#colour search distance
 
-CUE_POSITION_X = 167;
-CUE_POSITION_Y = 9;
+CUE_POSITION_X = -156;
+CUE_POSITION_Y = -186;
+
+X_BOUNDARY = 270
+Y_BOUNDARY = 270
 
 #----------------------------------#
 
@@ -37,16 +41,20 @@ CUE_POSITION_Y = 9;
 # and returns the colour of the coin
 def isWhite(img,i):
 	avg = 0;
+	x = int(i[0])
+	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
-	avg = np.average(img[i[1]-CSD:i[1]+CSD,i[0]-CSD:i[0]+CSD])  #compute the average RGB value
+	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
 	if avg < WHITE_THRESHOLD:
 		return False		
 	return True
 
 def isBlack(img,i):
 	avg = 0;
+	x = int(i[0])
+	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
-	avg = np.average(img[i[1]-CSD:i[1]+CSD,i[0]-CSD:i[0]+CSD])  #compute the average RGB value 
+	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value 
 	if avg < BLACK_THRESHOLD:
 		return True		
 	return False
@@ -57,23 +65,26 @@ def isCue(X,Y):
 		return True
 	return False 
 
+def inBoundary(X,Y):
+	return ( (abs(X)<X_BOUNDARY) and (abs(Y) < Y_BOUNDARY) and ( np.sqrt(X**2 + Y**2) > 5) ) 
+
 def updateBoardCoins():
 	coins = [] 
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
-	#cap = cv2.VideoCapture(2)
-	#ret, frame = cap.read()	#get the frame
+	cap = cv2.VideoCapture(0)
+	ret, frame = cap.read()	#get the frame
 
 	#for test
-	frame = cv2.imread("../CrokinolePhotos/crokinole1.jpg",1)
-	ret = True
+	#frame = cv2.imread("../CrokinolePhotos/crokinole1.jpg",1)
+	#ret = True
 
 	if ret==True:
 		cimg = frame	#get the image as the coloured image
     	img = cv2.cvtColor(cimg, cv2.COLOR_BGR2GRAY) #convert to grayscale
     	img = cv2.medianBlur(img,9) #run a filter over it to remove salt and pepper noise
     	#Hough Transform, you will probably need to play with the parameters here
-    	circles = cv2.HoughCircles(img,cv2.cv.CV_HOUGH_GRADIENT,1.9,10,param1=50,param2=30,minRadius=8,maxRadius=14)
+    	circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1.9,10,param1=50,param2=30,minRadius=8,maxRadius=12)
     	if (circles is not None):
 	    	for i in circles[0,:]:
 	    		coin = Coin()	#initialize the coin class
@@ -85,12 +96,16 @@ def updateBoardCoins():
 	    			#compute the position in mm
 	    			X = pixel_x_cam/focus_x*Depth
 	    			Y = pixel_y_cam/focus_y*Depth
-	    			coin.setPosition(X,Y)
-	    			if(isCue(X,Y)):
-	    				coin.setIdentity(3)
-	    			else:
-	    				coin.setIdentity(1)	    				
-	    			coins.append(coin)
+	    			Xunrot = X
+	    			X = np.cos(theta)*Xunrot - np.sin(theta)*Y
+	    			Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
+	    			if(inBoundary(X,Y)):
+		    			coin.setPosition(X,Y)
+		    			if(isCue(X,Y)):
+		    				coin.setIdentity(3)
+		    			else:
+		    				coin.setIdentity(1)	    				
+		    			coins.append(coin)
 	    		elif isBlack(img,i):#coin is black in colour
 	    			cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)	#red colour center marker for black (opponent)
 	    			#get the pixel value of the center of the coin
@@ -99,21 +114,23 @@ def updateBoardCoins():
 	    			#compute the position in mm
 	    			X = pixel_x_cam/focus_x*Depth
 	    			Y = pixel_y_cam/focus_y*Depth
-	    			coin.setPosition(X,Y)
-	    			coin.setIdentity(2)
-	    			coins.append(coin)
+	    			Xunrot = X
+	    			X = np.cos(theta)*Xunrot - np.sin(theta)*Y
+	    			Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
+	    			if(inBoundary(X,Y)):
+		    			coin.setPosition(X,Y)
+		    			coin.setIdentity(2)
+		    			coins.append(coin)
 	    		else:
 	    			pass #circle not of interest
 		
 
-		cv2.imshow('Crokinole Detected Coins',cimg)
-
-		print("Hit 'q' in the image window to get the coin positions")
-        while True:
-        	if cv2.waitKey(1) & 0xFF == ord('q'):
-        		break
-
-        		
+		#cv2.imshow('Crokinole Detected Coins',cimg)
+		#print("Hit 'q' in the image window to get the coin positions")
+        #while True:
+        #	if cv2.waitKey(1) & 0xFF == ord('q'):
+        #		break
+		        		
        	else:
        		pass   
 
