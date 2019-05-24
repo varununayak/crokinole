@@ -59,8 +59,8 @@ G = np.matmul(AI,Tform)
 
 #-------WHAT ARE YOU CALIBRATING--------#
 
-CALIB_DEPTH = True
-CALIB_ANGLE = True
+CALIB_DEPTH = False
+CALIB_ANGLE = False
 
 #-------CALIBRATION VALUES--------#
 #COPY THESE OVER TO CoinsUpdater.py
@@ -133,25 +133,27 @@ def main():
 		    			if(CALIB_DEPTH):
 		    				print(X,Y,"Need 254 at the points") #x and y coordinates in pixels    			
 		    			else:
-		    				print(pixel_x_cam + offset_pixel_x,pixel_y_cam+offset_pixel_y,"Update offset values")
+		    				#draw reference lines
+							x1 =int(i[0])+100
+							y1 =int(i[1])+100
+							x0 =int(i[0])-100
+							y0 =int(i[1])-100
+							cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
+							x1 = int(i[0])+100
+							y1 = int(i[1])-100
+							x0 = int(i[0])-100
+							y0 = int(i[1])+100
+							cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
+							cv2.circle(cimg,(320,240), 2,(255,0,0),3)							
+							print(pixel_x_cam + offset_pixel_x,pixel_y_cam+offset_pixel_y,"Update offset values")
 
+					cv2.imshow('Crokinole Detected Coins',cimg)		
 
 		    		#else:
 
 		    			#cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)	#red colour center marker for black (opponent)
 			
-			#draw reference lines
-			x1 =320+100
-			y1 =240+100
-			x0 =320-100
-			y0 =240-100
-			cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
-			x1 = 320+100
-			y1 = 240-100
-			x0 = 320-100
-			y0 = 240+100
-			cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
-			cv2.imshow('Crokinole Detected Coins',cimg)
+			
 
 	        if cv2.waitKey(1) & 0xFF == ord('q'):
 	            break

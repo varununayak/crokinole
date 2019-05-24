@@ -36,6 +36,7 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
 Matrix3d calculateRotationInTrajectory(double t);
+void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
 
 
 // redis keys:
@@ -54,6 +55,13 @@ std::string ROBOT_GRAVITY_KEY;
 //state
 // std::string MODE_CHANGE_KEY = "modechange";
 std::string MODE_CHANGE_KEY = "modechange";
+
+//soft safety values
+const std::array<double, 7> joint_position_max = {2.7, 1.6, 2.7, -0.2, 2.7, 3.6, 2.7};
+const std::array<double, 7> joint_position_min = {-2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7};
+const std::array<double, 7> joint_velocity_limits = {2.0, 2.0, 2.0, 2.0, 2.5, 2.5, 2.5};
+const std::array<double, 7> joint_torques_limits = {85, 85, 85, 85, 10, 10, 10};
+
 
 unsigned long long controller_counter = 0;
 
@@ -174,6 +182,7 @@ int main() {
 		double dt = 0.001;
 		double t = controller_counter*dt;
 
+		
 		if(mode == WAIT_MODE)
 		{	
 			
@@ -252,6 +261,7 @@ int main() {
 
 				posori_task->_desired_position = calculatePointInTrajectory(t);
 				posori_task->_desired_orientation = calculateRotationInTrajectory(t);
+				//printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
 
 				// compute torques
 				posori_task->computeTorques(posori_task_torques);
@@ -261,6 +271,9 @@ int main() {
 			}
 
 			// send to redis
+
+			safetyChecks(robot->_q,robot->_dq,command_torques, dof);
+
 			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 
 			controller_counter++;
@@ -306,40 +319,48 @@ From calibration and shot planner, we need (all expressed in robot frame)
 */
 Vector3d calculatePointInTrajectory(double t)
 {	
-	Vector3d xh; xh << 0.32,-0.35,0.65;	//calibrate this
-	Vector3d xc; xc << 0.5,0.35,0.60;	//calibrate this
-	Vector3d xcd; //calculate this - get from redis
-
-	// radius of the board in mm
-	double r=20.125/2; 
+	// diameter of board is 20.125 in, convert to m:
+	double r=20.125/2*0.0254; 
 	double t_start = 0;
 	double t_1 = 5;
+	double t_2 = 10;
+
+	double x_offset = 0.7; //need to calibrate
+	double y_offset = 0; //need to calibrate
+	Vector3d xh; xh << 0.32,-0.35,0.5;	//calibrate this
+	// Vector3d xc; xc << 0.5,0.35,0.5;
+	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.5;	//calibrate this
+	Vector3d xcd; xcd << r*sin(-3*M_PI/4)+x_offset, r*cos(-3*M_PI/4)+y_offset, 0.5; //calculate this - get from redis
 
 	Vector3d x; 
 
 	if(inRange(t,t_start,t_1))
 	{
 		//set positions according to analytical functions
-		// x =  xh + (xc  -  xh )*(t-0)/(5);
+		x =  xh + (xc  -  xh )*(t-0)/(5);
+	}
+	else if (inRange(t,t_1,t_2))
+	{
 
+		// x = xc;
 		// Move cue coin from home to desired position
-		double x0 = xh(1);
-		double y0 = xh(2);
-		double xf = xc(1);
-		double yf = xc(2);
+		double x0 = xc(0);
+		double y0 = xc(1);
+		double xf = xcd(0);
+		double yf = xcd(1);
 
-		double t0 = atan2(y0,x0);
-		double tf = atan2(yf,xf);
+		double t0 = atan2(x0-x_offset,y0-y_offset);
+		double tf = atan2(xf-x_offset,yf-y_offset);
 
-		double old_range = t_1-t_start;
+		double old_range = t_2-t_1;
 		double new_range = tf - t0;
-		double new_t = (((t-0)*new_range)/old_range) + t0;
+		double new_t = (((t-t_1)*(new_range))/old_range) + t0;
 
-		x << r*sin(new_t), r*cos(new_t), xh(3);
+		x << r*sin(new_t)+x_offset, r*cos(new_t)+y_offset, xc(2);
 	}
 	else
 	{	
-		
+		x = xcd;
 
 	}
 
@@ -356,18 +377,23 @@ From calibration and shot planner, we need:
 Matrix3d calculateRotationInTrajectory(double t)
 {
 	Matrix3d rot;
+	Matrix3d home_orientation;
+
+	home_orientation << 1,0,0,
+	 					0,1,0,
+	 					0,0,-1;
 
 	if(inRange(t,0,5))
 	{
-	 rot << 1,0,0,
-	 		0,0,-1,
-	 		0,1,0;
+	 rot =home_orientation;
 	 }
-	 else  //final orientation
+	 else if(inRange(t,5,10))  //final orientation
 	 {
-	 	rot << 1,0,0,
-	 		0,0,-1,
-	 		0,1,0;
+	 	rot = home_orientation;
+		// rot = AngleAxisd(M_PI/4, Vector3d::UnitY())*home_orientation;
+	 }
+	 else{
+		rot = home_orientation;
 	 }
 
 	 return rot;
@@ -477,4 +503,18 @@ Matrix3d GenerateTrajectory(double theta, double psi, Vector3d hitVelocity)
 
 
 
+
+
+//soft limit safetycheck as per the driver
+void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof)
+{
+	for(int i = 0; i < dof; i++)
+	{
+		if(q[i]>joint_position_max[i]) cout << "------!! VIOLATED MAX JOINT POSITION SOFT LIMIT !!-------" << endl; 
+		if(q[i]<joint_position_min[i]) cout << "------!! VIOLATED MIN JOINT POSITION SOFT LIMIT !!-------" << endl; 
+		if(abs(dq[i])>joint_velocity_limits[i]) cout << "------!! VIOLATED MAX JOINT VELOCITY SOFT LIMIT !!-------" << endl; 
+		if(abs(tau[i])>joint_torques_limits[i]) cout << "------!! VIOLATED MAX JOINT TORQUE SOFT LIMIT !!-------" << endl; 
+
+	}
+}
 
