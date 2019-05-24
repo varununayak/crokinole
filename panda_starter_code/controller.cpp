@@ -260,7 +260,7 @@ int main() {
 
 				posori_task->_desired_position = calculatePointInTrajectory(t);
 				posori_task->_desired_orientation = calculateRotationInTrajectory(t);
-				printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
+				//printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
 
 				// compute torques
 				posori_task->computeTorques(posori_task_torques);
