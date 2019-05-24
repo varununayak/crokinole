@@ -144,7 +144,7 @@ def main():
 							x0 = int(i[0])-100
 							y0 = int(i[1])+100
 							cv2.line(cimg,(x0,y0),(x1,y1),(0,0,255),6)
-							cv2.circle(cimg,(320,240),2,(255,0,0),3)							
+							cv2.circle(cimg,(320,240), 2,(255,0,0),3)							
 							print(pixel_x_cam + offset_pixel_x,pixel_y_cam+offset_pixel_y,"Update offset values")
 
 					cv2.imshow('Crokinole Detected Coins',cimg)		
