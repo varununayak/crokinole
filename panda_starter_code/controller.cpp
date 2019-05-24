@@ -36,6 +36,7 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
 Matrix3d calculateRotationInTrajectory(double t);
+void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
 
 
 // redis keys:
@@ -53,6 +54,13 @@ std::string ROBOT_GRAVITY_KEY;
 
 //state
 std::string MODE_CHANGE_KEY = "modechange";
+
+//soft safety values
+const std::array<double, 7> joint_position_max = {2.7, 1.6, 2.7, -0.2, 2.7, 3.6, 2.7};
+const std::array<double, 7> joint_position_min = {-2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7};
+const std::array<double, 7> joint_velocity_limits = {2.0, 2.0, 2.0, 2.0, 2.5, 2.5, 2.5};
+const std::array<double, 7> joint_torques_limits = {85, 85, 85, 85, 10, 10, 10};
+
 
 unsigned long long controller_counter = 0;
 
@@ -173,6 +181,7 @@ int main() {
 		double dt = 0.001;
 		double t = controller_counter*dt;
 
+		
 		if(mode == WAIT_MODE)
 		{	
 			
@@ -261,6 +270,9 @@ int main() {
 			}
 
 			// send to redis
+
+			safetyChecks(robot->_q,robot->_dq,command_torques, dof);
+
 			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 
 			controller_counter++;
@@ -392,4 +404,18 @@ Matrix3d calculateRotationInTrajectory(double t)
 bool inRange(double t, double lower, double upper)
 {
 	return (  (t < upper) &&  (t >= lower) );
+}
+
+
+//soft limit safetycheck as per the driver
+void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof)
+{
+	for(int i = 0; i < dof; i++)
+	{
+		if(q[i]>joint_position_max[i]) cout << "------!! VIOLATED MAX JOINT POSITION SOFT LIMIT !!-------" << endl; 
+		if(q[i]<joint_position_min[i]) cout << "------!! VIOLATED MIN JOINT POSITION SOFT LIMIT !!-------" << endl; 
+		if(abs(dq[i])>joint_velocity_limits[i]) cout << "------!! VIOLATED MAX JOINT VELOCITY SOFT LIMIT !!-------" << endl; 
+		if(abs(tau[i])>joint_torques_limits[i]) cout << "------!! VIOLATED MAX JOINT TORQUE SOFT LIMIT !!-------" << endl; 
+
+	}
 }
