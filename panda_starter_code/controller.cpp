@@ -52,6 +52,7 @@ std::string CORIOLIS_KEY;
 std::string ROBOT_GRAVITY_KEY;
 
 //state
+// std::string MODE_CHANGE_KEY = "modechange";
 std::string MODE_CHANGE_KEY = "modechange";
 
 unsigned long long controller_counter = 0;
@@ -379,3 +380,101 @@ bool inRange(double t, double lower, double upper)
 {
 	return (  (t < upper) &&  (t >= lower) );
 }
+
+
+/*
+Generates Trajectory in Operational space for End Effector to follow. Params given by shot planner
+@param   theta(rad) - angle along starting arc where cue coin starts
+@param.  psi(rad) - angle to hit cue coin such that it hits opponent coin
+@param   hitVelocity - speed to hit cue coin
+@param.  start_time - default to 0
+@param   end_time - default to 9 (should be manually calibrated)
+
+A) Vector3d pullBack<xpb, ypb, zpb> - location to start trajectory (needs to be calibrated manually)
+B) Vector3d lip_position<xl, yl, zl> - Location right above lip of board - acts as intermediate point
+C) Vector3d cuecoin_pos<xc, yc, zc> - location of cue coin, derived from theta
+D) Vector3d followThrough<xft, yft, zft> - location of follow through, has velocity of 0
+
+5) Vector3d lip_velocity<vxl, vyl, vzl> - velocity to pass above the lip (needs to be calibrated manually)
+
+Vector A - pullback position
+Vector B - position right above lip
+
+*/
+
+Matrix3d GenerateTrajectory(double theta, double psi, Vector3d hitVelocity)
+
+	//values need to be measured
+	// radius of the arc
+	double r=20.125/2; 
+	double arc_length = 10.0;
+
+	//values below need to be tuned
+	double end_time = 9.0; //in seconds
+	double t1 = 0.0;
+	double t2 = end_time/3;
+	double t3 = 2*end_time/3;
+	double t4 = end_time;
+
+	Vector3d A; A<<0.0, -r - 1.0, 3.0;
+	Vector3d B; B<<0.0, -r, 0.5;
+	Vector3d C; C<<0.0, -arc_length, 0.0;
+	Vector3d D; D<<0.0, -4*arc_length/5, 0.0;
+
+	Vector3d B_velocity; B_velocity<< 0.0, 1.0, -1.0;
+
+	MatrixXd Eqns(16, 16);
+	VectorXd values;
+	VectorXd coeffs;
+
+
+	Eqns<<1, 0, t1, 0, t1^2, 0, t1^3, 0, t1^4, 0, t1^5, 0, t1^6, 0, t1^7, 0,
+      	  0, 1, 0, t1, 0, t1^2, 0, t1^3, 0, t1^4, 0, t1^5, 0, t1^6, 0, t1^7,
+      	  0, 0, 1, 0, 2*t1, 0, 3*t1^2, 0, 4*t1^3, 0, 5*t1^4, 0, 6*t1^5, 0, 7*t1^6, 0.
+      	  0,  0 0 1 0 2*t1 0 3*t1^2 0 4*t1^3 0 5*t1^4 0 6*t1^5 0 7*t1^6;
+          1 0 t2 0 t2^2 0 t2^3 0 t2^4 0 t2^5 0 t2^6 0 t2^7 0;
+          0 1 0 t2 0 t2^2 0 t2^3 0 t2^4 0 t2^5 0 t2^6 0 t2^7;
+          0 0 1 0 2*t2 0 3*t2^2 0 4*t2^3 0 5*t2^4 0 6*t2^5 0 7*t2^6 0;
+          0 0 0 1 0 2*t2 0 3*t2^2 0 4*t2^3 0 5*t2^4 0 6*t2^5 0 7*t2^6;
+          1 0 t3 0 t3^2 0 t3^3 0 t3^4 0 t3^5 0 t3^6 0 t3^7 0;
+          0 1 0 t3 0 t3^2 0 t3^3 0 t3^4 0 t3^5 0 t3^6 0 t3^7;
+          0 0 1 0 2*t3 0 3*t3^2 0 4*t3^3 0 5*t3^4 0 6*t3^5 0 7*t3^6 0;
+          0 0 0 1 0 2*t3 0 3*t3^2 0 4*t3^3 0 5*t3^4 0 6*t3^5 0 7*t3^6;
+          1 0 t4 0 t4^2 0 t4^3 0 t4^4 0 t4^5 0 t4^6 0 t4^7 0;
+          0 1 0 t4 0 t4^2 0 t4^3 0 t4^4 0 t4^5 0 t4^6 0 t4^7;
+          0 0 1 0 2*t4 0 3*t4^2 0 4*t4^3 0 5*t4^4 0 6*t4^5 0 7*t4^6 0;
+          0 0 0 1 0 2*t4 0 3*t4^2 0 4*t4^3 0 5*t4^4 0 6*t4^5 0 7*t4^6;
+
+    values<<A(1), A(2), 0, 0, B(1), B(2), B_velocity(1), B_velocity(2), C(1), C(2), hitVelocity(1), hitVelocity(2), D(1), D(2), 0, 0;
+    coeffs = Eqns.colPivHouseholderQr().solve(values);
+
+    double dt = 0.001;
+    double t = 0.0;
+    int rows = (int) end_time/dt;
+    MatrixXd trajectory = MatrixXd::Zero(rows, 3);
+    for(int i = 0; t < rows; i++) {
+    	double x = 0.0; double y; double z;
+        y = coeffs(1) + coeffs(3)*t + coeffs(5)*(t^2) + coeffs(7)*(t^3) + coeffs(9)*(t^4) + coeffs(11)*(t^5) + coeffs(13)*(t^6) + coeffs(15)*(t^7);
+		z = coeffs(2) + coeffs(4)*t + coeffs(6)*(t^2) + coeffs(8)*(t^3) + coeffs(10)*(t^4) + coeffs(12)*(t^5) + coeffs(14)*(t^6) + coeffs(16)*(t^7);
+		trajectory(i, 0) = x;
+		trajectory(i, 1) = y;
+		trajectory(i, 2) = z;
+		t += dt;
+    }
+
+    MatrixXd Transform(4, 4) << cos(- pi/2 + psi) -sin(- pi/2+ psi) 0 (L*sin(theta));
+     							sin(- pi/2 + psi) cos(- pi/2 +psi) 0 (-L*cos(theta));
+     							0 0 1 0;
+     							0 0 0 1];
+
+
+
+
+
+
+
+
+
+
+
+
