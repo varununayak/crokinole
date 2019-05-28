@@ -40,8 +40,8 @@ std::string ROBOT_GRAVITY_KEY;
 
 unsigned long long controller_counter = 0;
 
-const bool flag_simulation = false;
-// const bool flag_simulation = true;
+//const bool flag_simulation = false;
+ const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
@@ -127,6 +127,10 @@ int main() {
 	double start_time = timer.elapsedTime(); //secs
 	bool fTimerDidSleep = true;
 
+	double rot_z;
+	cout << "Enter rotz angle:" << endl;
+	cin >> rot_z;
+
 	while (runloop) {
 		// wait for next scheduled loop
 		timer.waitForNextLoop();
@@ -166,14 +170,20 @@ int main() {
 			command_torques = joint_task_torques;
 
 			if( (robot->_q - q_init_desired).norm() < 0.15 )
-			{
+			{	
+
 				posori_task->reInitializeTask();
 				posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
 				Matrix3d rot;
 				 rot << -1,0,0,
 	 				0,1,0,
 	 				0,0,-1;
-				posori_task->_desired_orientation = AngleAxisd(M_PI, Vector3d::UnitZ()).toRotationMatrix()*rot;// AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
+	 			double psi; psi = rot_z*M_PI/180.0;
+	 			Matrix3d hit_rot;
+	 			hit_rot << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0,
+     			 		   sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0,
+     					   0, 0, 1;
+				posori_task->_desired_orientation = AngleAxisd(M_PI, Vector3d::UnitZ()).toRotationMatrix()*hit_rot*rot;// AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
 
 				joint_task->reInitializeTask();
 				joint_task->_kp = 0;

@@ -69,12 +69,15 @@ const std::array<double, 7> joint_torques_limits = {85, 85, 85, 85, 10, 10, 10};
 
 unsigned long long controller_counter = 0;
 
-// const bool flag_simulation = false;
-const bool flag_simulation = true;
+const bool flag_simulation = false;
+//const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
 int main() {
+
+
+		cout << "HERE1" << endl;
 
 	if(flag_simulation)
 	{
@@ -94,14 +97,23 @@ int main() {
 		ROBOT_GRAVITY_KEY = "sai2::FrankaPanda::sensors::model::robot_gravity";		
 	}
 
+
+			cout << "HERE2" << endl;
+
 	// start redis client
 	auto redis_client = RedisClient();
 	redis_client.connect();
+
+			cout << "HERE3"<< endl;
+
 
 	// set up signal handler
 	signal(SIGABRT, &sighandler);
 	signal(SIGTERM, &sighandler);
 	signal(SIGINT, &sighandler);
+
+		cout << "HERE4" << endl;
+
 
 	// load robots
 	auto robot = new Sai2Model::Sai2Model(robot_file, false);
@@ -109,6 +121,8 @@ int main() {
 	VectorXd initial_q = robot->_q;
 	robot->updateModel();
 
+
+cout << "HERE5" << endl;
 	// prepare controller
 	int dof = robot->dof();
 	VectorXd command_torques = VectorXd::Zero(dof);
@@ -118,6 +132,8 @@ int main() {
 	const string control_link = "link7";
 	const Vector3d control_point = Vector3d(0,0,0.2035);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
+
+	cout << "HERE6" << endl;
 
 #ifdef USING_OTG
 	posori_task->_use_interpolation_flag = true;
@@ -133,6 +149,7 @@ int main() {
 
 	// joint task
 	auto joint_task = new Sai2Primitives::JointTask(robot);
+	cout << "HERE6a" << endl;
 
 #ifdef USING_OTG
 	joint_task->_use_interpolation_flag = true;
@@ -164,15 +181,21 @@ int main() {
 	Vector3d omega;
 	Vector3d alpha;
 
+	cout << "HERE7" << endl;
+
 		// open csv
-	std::ofstream myfile;
-    myfile.open ("trajectory.csv");
+	// std::ofstream myfile;
+ //    myfile.open ("trajectory.csv");
 
     //Velocity to hit the coin at. Change later to integrate with shot planner
-    Vector3d hitVelocity; hitVelocity << 5.0*0.0254, 0.0, 0.0;
+    double hit_vel_des = 0;
+    cout << "Enter Desired Hit Vel in inches/sec:" << endl;
+    cin >> hit_vel_des;
+    Vector3d hitVelocity; hitVelocity << hit_vel_des*0.0254, 0.0, 0.0;
 
     //Initialize and retreive template trajectory
-	VectorXd poly_trajectory_coeffs = VectorXd::Zero(16); 
+	VectorXd poly_trajectory_coeffs = VectorXd::Zero(16);
+	cout << "HERE8" << endl;
 	poly_trajectory_coeffs = generateTrajectory(hitVelocity);
 	//cout<<poly_trajectory_coeffs(0)<<','<<poly_trajectory_coeffs(1)<<','<<poly_trajectory_coeffs(2)<<','<<poly_trajectory_coeffs(3)<<','<<poly_trajectory_coeffs(4)<<','<<poly_trajectory_coeffs(5)<<','<<poly_trajectory_coeffs(6)<<','<<poly_trajectory_coeffs(7)<<','<<poly_trajectory_coeffs(8)<<','<<poly_trajectory_coeffs(9)<<','<<poly_trajectory_coeffs(10)<<','<<poly_trajectory_coeffs(11)<<','<<poly_trajectory_coeffs(12)<<','<<poly_trajectory_coeffs(13)<<','<<poly_trajectory_coeffs(14)<<','<<poly_trajectory_coeffs(15)<<endl;
 	Vector3d end_position = Vector3d::Zero(3);
@@ -180,6 +203,7 @@ int main() {
 
 	//cout<<poly_trajectory_coeffs<<endl;
 
+		
 
 
 	while (runloop) {
@@ -205,7 +229,7 @@ int main() {
 		
 		if(mode == WAIT_MODE)
 		{	
-			
+
 			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
 			{	
 				mode = EXECUTE_MODE;
@@ -258,6 +282,7 @@ int main() {
 					joint_task->_kp = 0;
 
 					state = POSORI_CONTROLLER;
+					controller_counter = 0;
 				}
 			}
 
@@ -331,7 +356,7 @@ int main() {
     std::cout << "Controller Loop run time  : " << end_time << " seconds\n";
     std::cout << "Controller Loop updates   : " << timer.elapsedCycles() << "\n";
     std::cout << "Controller Loop frequency : " << timer.elapsedCycles()/end_time << "Hz\n";
-    myfile.close();
+    // myfile.close();
 
 	return 0;
 }
@@ -475,7 +500,7 @@ Vector D - ending position
 */
 
 VectorXd generateTrajectory(Vector3d hitVelocity){
-
+	cout << "HERE8" << endl;
 	//values need to be measured
 	// radius of the arc
 	double r=13.1475/2*0.0254; 
@@ -488,8 +513,8 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
 	double t3 = 6.0;
 	double t4 = end_time;
 
-	Vector3d A; A<<-5.5*0.0254, 5.0*0.0254, 0.0;
-	Vector3d B; B<<-3.0515*0.0254, 3.0*0.0254, 0.0;
+	Vector3d A; A<<-5.5*0.0254, 20.0*0.0254, 0.0;
+	Vector3d B; B<<-3.0515*0.0254, 10.0*0.0254, 0.0;
 	Vector3d C; C<< 0*0.0254, 0.0, 0.0;
 	Vector3d D; D<< 3.0*0.0254, 3.0*0.0254, 0.0;
 
@@ -498,8 +523,8 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
 
 
 	MatrixXd Eqns = MatrixXd::Zero(16, 16);
-	VectorXd values = VectorXd::Zero(1, 16);
-	VectorXd coeffs;
+	VectorXd values = VectorXd::Zero(16);
+	VectorXd coeffs = VectorXd::Zero(16);
 
 
 	Eqns<<1, 0, t1, 0, pow(t1, 2), 0, pow(t1, 3), 0, pow(t1, 4), 0, pow(t1, 5), 0, pow(t1, 6), 0, pow(t1, 7), 0,
@@ -523,10 +548,12 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
 
     //values<<A(0), A(1), 0;
     //values = values.transpose();
-    //coeffs = Eqns.fullPivLu().solve(values);
+    coeffs = Eqns.fullPivLu().solve(values);
 
     //Different methods of solving result in different coeffs values. Current method is the closest to matlab values.
-    coeffs = Eqns.inverse()*values;
+    cout << "HERE9" << endl;
+    //coeffs = Eqns.inverse()*values;
+    cout << "HERE10" << endl;
     cout<<coeffs(0)<<','<<coeffs(1)<<','<<coeffs(2)<<','<<coeffs(3)<<','<<coeffs(4)<<','<<coeffs(5)<<','<<coeffs(6)<<','<<coeffs(7)<<','<<coeffs(8)<<','<<coeffs(9)<<','<<coeffs(10)<<','<<coeffs(11)<<','<<coeffs(12)<<','<<coeffs(13)<<','<<coeffs(14)<<','<<coeffs(15)<<endl;
 
     return coeffs;
@@ -558,11 +585,11 @@ Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi)
 
     //turns board frame to robot frame
     MatrixXd transformation_b_to_r = MatrixXd::Zero(4, 4);
-    transformation_b_to_r <<  0, 1, 0, .6,
+    transformation_b_to_r <<  0, 1, 0, .65,
     						 -1, 0, 0,  0,
     						  0, 0, 1, .3,
     						  0, 0, 0,  1;
-    cout<<transformation_b_to_r<<endl;
+    //cout<<transformation_b_to_r<<endl;
 
     //cout<<"x="<<x<<" "<<"y="<<y<<" "<<"z="<<z<<endl;
     Vector3d trajectory = Vector3d::Zero(3);
@@ -570,15 +597,15 @@ Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi)
     trajectory_augmented<< x, y, z, 1;
     //trajectory_augmented<< 0, 13.0*0.0254, 0.35*0.0254+0.3, 1;
     //trajectory_augmented<< (arc_length*sin(theta)), (-arc_length*cos(theta)), 0, 1;
-    cout<<"before transformation: "<<trajectory_augmented(0)<<", "<<trajectory_augmented(1)<<", "<<trajectory_augmented(2)<<endl;
+    //cout<<"before transformation: "<<trajectory_augmented(0)<<", "<<trajectory_augmented(1)<<", "<<trajectory_augmented(2)<<endl;
     VectorXd trajectory_augmented_transformed = VectorXd::Zero(4);
     trajectory_augmented_transformed = transformation_b_to_r * (transformation * trajectory_augmented);
     //trajectory_augmented_transformed = transformation_b_to_r * trajectory_augmented;
 
     // cout<<"xta="<<trajectory_augmented(0)<<" "<<"yta="<<trajectory_augmented(1)<<" "<<"zta="<<trajectory_augmented(2)<<endl;
-    trajectory = trajectory_augmented_transformed.leftCols(3);
-    cout<<"xt="<<trajectory(0)<<" "<<"yt="<<trajectory(1)<<" "<<"zt="<<trajectory(2)<<endl;
-    cout<<"t="<<t<<endl;
+    trajectory = trajectory_augmented_transformed.head(3);
+    //cout<<"xt="<<trajectory(0)<<" "<<"yt="<<trajectory(1)<<" "<<"zt="<<trajectory(2)<<endl;
+    //cout<<"t="<<t<<endl;
 
     return trajectory;
 }
