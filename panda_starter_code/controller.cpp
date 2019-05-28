@@ -116,7 +116,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(0,0,0.07);
+	const Vector3d control_point = Vector3d(0,0,0.2035);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 #ifdef USING_OTG
@@ -168,12 +168,15 @@ int main() {
 	std::ofstream myfile;
     myfile.open ("trajectory.csv");
 
+    //Velocity to hit the coin at. Change later to integrate with shot planner
     Vector3d hitVelocity; hitVelocity << 5.0*0.0254, 0.0, 0.0;
+
+    //Initialize and retreive template trajectory
 	VectorXd poly_trajectory_coeffs = VectorXd::Zero(16); 
 	poly_trajectory_coeffs = generateTrajectory(hitVelocity);
-	cout<<poly_trajectory_coeffs(0)<<','<<poly_trajectory_coeffs(1)<<','<<poly_trajectory_coeffs(2)<<','<<poly_trajectory_coeffs(3)<<','<<poly_trajectory_coeffs(4)<<','<<poly_trajectory_coeffs(5)<<','<<poly_trajectory_coeffs(6)<<','<<poly_trajectory_coeffs(7)<<','<<poly_trajectory_coeffs(8)<<','<<poly_trajectory_coeffs(9)<<','<<poly_trajectory_coeffs(10)<<','<<poly_trajectory_coeffs(11)<<','<<poly_trajectory_coeffs(12)<<','<<poly_trajectory_coeffs(13)<<','<<poly_trajectory_coeffs(14)<<','<<poly_trajectory_coeffs(15)<<endl;
+	//cout<<poly_trajectory_coeffs(0)<<','<<poly_trajectory_coeffs(1)<<','<<poly_trajectory_coeffs(2)<<','<<poly_trajectory_coeffs(3)<<','<<poly_trajectory_coeffs(4)<<','<<poly_trajectory_coeffs(5)<<','<<poly_trajectory_coeffs(6)<<','<<poly_trajectory_coeffs(7)<<','<<poly_trajectory_coeffs(8)<<','<<poly_trajectory_coeffs(9)<<','<<poly_trajectory_coeffs(10)<<','<<poly_trajectory_coeffs(11)<<','<<poly_trajectory_coeffs(12)<<','<<poly_trajectory_coeffs(13)<<','<<poly_trajectory_coeffs(14)<<','<<poly_trajectory_coeffs(15)<<endl;
 	Vector3d end_position = Vector3d::Zero(3);
-	end_position = trajectoryPosition(poly_trajectory_coeffs, 9, -45*M_PI/180.0, 45*M_PI/180.0);
+	end_position = trajectoryPosition(poly_trajectory_coeffs, 9, -0.0*M_PI/180.0, 90.0*M_PI/180.0);
 
 	//cout<<poly_trajectory_coeffs<<endl;
 
@@ -288,17 +291,21 @@ int main() {
 				joint_task->updateTaskModel(N_prec);
 
 				//posori_task->_desired_position = calculatePointInTrajectory(t);
+
+				//Keep orientation
 				posori_task->_desired_orientation = calculateRotationInTrajectory(t);
 				//printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
 
 				// myfile<<controller_counter<<endl;
 				//myfile <<controller_counter<<","<<poly_trajectory(controller_counter, 0)<<","<<poly_trajectory(controller_counter, 1)<<","<<poly_trajectory(controller_counter, 2)<<endl;
-				Vector3d position = Vector3d::Zero(3);
-				position = trajectoryPosition(poly_trajectory_coeffs, t, 45, M_PI/2);
-				myfile<<t<<","<<x(0)<<","<<x(1)<<","<<x(2)<<endl;
-				cout<<"x = "<<x(0)<<" y = "<<x(1)<<" z = "<<x(2)<<endl;
+				// Vector3d position = Vector3d::Zero(3);
+				// position = trajectoryPosition(poly_trajectory_coeffs, t, 45, M_PI/2);
+				// myfile<<t<<","<<x(0)<<","<<x(1)<<","<<x(2)<<endl;
+				// cout<<"x = "<<x(0)<<" y = "<<x(1)<<" z = "<<x(2)<<endl;
 				//cout<<position(0)<<","<<position(1)<<","<<position(2)<<endl;
-				posori_task->_desired_position = trajectoryPosition(poly_trajectory_coeffs, t, -45*M_PI/180.0, 45*M_PI/180.0);
+
+				//Calculate positions based on trajecotry, inputs starting position angle (theta) and hitting angle (psi)
+				posori_task->_desired_position = trajectoryPosition(poly_trajectory_coeffs, t, 0*M_PI/180.0, 90.0*M_PI/180.0);
 
 				// compute torques
 				posori_task->computeTorques(posori_task_torques);
@@ -462,6 +469,8 @@ D) Vector3d followThrough<xft, yft, zft> - location of follow through, has veloc
 
 Vector A - pullback position
 Vector B - position right above lip
+Vector C - position at the arc (0, 0) before transfomations
+Vector D - ending position
 
 */
 
@@ -470,7 +479,7 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
 	//values need to be measured
 	// radius of the arc
 	double r=13.1475/2*0.0254; 
-	double arc_length = 10.074*0.0254;
+	double arc_length = 10.096*0.0254;
 
 	//values below need to be tuned
 	double end_time = 9.0; //in seconds
@@ -480,12 +489,13 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
 	double t4 = end_time;
 
 	Vector3d A; A<<-5.5*0.0254, 5.0*0.0254, 0.0;
-	Vector3d B; B<<-3.0515*0.0254, 2.5*0.0254, 0.0;
-	Vector3d C; C<<4.0*0.0254, 0.0, 0.0;
-	Vector3d D; D<<5.0*0.0254, 3.0*0.0254, 0.0;
+	Vector3d B; B<<-3.0515*0.0254, 3.0*0.0254, 0.0;
+	Vector3d C; C<< 0*0.0254, 0.0, 0.0;
+	Vector3d D; D<< 3.0*0.0254, 3.0*0.0254, 0.0;
 
-	Vector3d B_velocity; B_velocity<< 5.0*0.0254, -1.0*0.0254, 0.0;
-	// hitVelocity << 1.0, 0.0, 0.0;
+	//velocity right above the lip
+	Vector3d B_velocity; B_velocity<< 4.0*0.0254, -1.0*0.0254, 0.0;
+
 
 	MatrixXd Eqns = MatrixXd::Zero(16, 16);
 	VectorXd values = VectorXd::Zero(1, 16);
@@ -510,18 +520,20 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
           0, 0, 0, 1, 0, 2*t4, 0, 3*pow(t4, 2), 0, 4*pow(t4, 3), 0, 5*pow(t4, 4), 0, 6*pow(t4, 5), 0, 7*pow(t4, 6);
 
     values << A(0), A(1), 0, 0, B(0), B(1), B_velocity(0), B_velocity(1), C(0), C(1), hitVelocity(0), hitVelocity(1), D(0), D(1), 0, 0;
-    //cout<<Eqns<<endl;
-    //cout<<values(0)<<','<<values(1)<<','<<values(2)<<','<<values(3)<<','<<values(4)<<','<<values(5)<<','<<values(6)<<','<<values(7)<<','<<values(8)<<','<<values(9)<<','<<values(10)<<','<<values(11)<<','<<values(12)<<','<<values(13)<<','<<values(14)<<','<<values(15)<<endl;
-    //cout<<A(1)<<','<<A(2)<<','<<0<<','<<0<<','<<B(1)<<','<<B(2)<<','<<B_velocity<<endl;
+
     //values<<A(0), A(1), 0;
     //values = values.transpose();
     //coeffs = Eqns.fullPivLu().solve(values);
+
+    //Different methods of solving result in different coeffs values. Current method is the closest to matlab values.
     coeffs = Eqns.inverse()*values;
     cout<<coeffs(0)<<','<<coeffs(1)<<','<<coeffs(2)<<','<<coeffs(3)<<','<<coeffs(4)<<','<<coeffs(5)<<','<<coeffs(6)<<','<<coeffs(7)<<','<<coeffs(8)<<','<<coeffs(9)<<','<<coeffs(10)<<','<<coeffs(11)<<','<<coeffs(12)<<','<<coeffs(13)<<','<<coeffs(14)<<','<<coeffs(15)<<endl;
 
     return coeffs;
 }
 
+/*Takes template trajectory, and calculation positions of needed trajectory with information from shot planner. 
+theta is the angle along the arc we must hit the cue coin. Psi is the direction we hit the cue coin. t is time step*/
 Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi)
 {
 	double r=13.1475/2*0.0254; 
@@ -531,20 +543,20 @@ Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi)
     double endtime = 9.0;
     if (t>= 0 and t < endtime){
     	y = coeffs(0) + coeffs(2)*t + coeffs(4)*(pow(t, 2)) + coeffs(6)*(pow(t, 3)) + coeffs(8)*(pow(t, 4)) + coeffs(10)*(pow(t, 5)) + coeffs(12)*(pow(t, 6)) + coeffs(14)*(pow(t, 7));
-		z = coeffs(1) + coeffs(3)*t + coeffs(5)*(pow(t, 2)) + coeffs(7)*(pow(t, 3)) + coeffs(9)*(pow(t, 4)) + coeffs(11)*(pow(t, 5)) + coeffs(13)*(pow(t, 6)) + coeffs(15)*(pow(t, 7)) + 0.15;
+		z = coeffs(1) + coeffs(3)*t + coeffs(5)*(pow(t, 2)) + coeffs(7)*(pow(t, 3)) + coeffs(9)*(pow(t, 4)) + coeffs(11)*(pow(t, 5)) + coeffs(13)*(pow(t, 6)) + coeffs(15)*(pow(t, 7))+0.012192;
 	}else{
 		y = 0.0;
-		z = 0.15;
+		z = 0.012192;
 	}
 
+	//transformation matrix to create desired trajectory.
     MatrixXd transformation = MatrixXd::Zero(4, 4); 
     transformation << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0, (arc_length*sin(theta)),
      			 sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0, (-arc_length*cos(theta)),
      			 0, 0, 1, 0,
      			 0, 0, 0, 1;
 
-    // cout<<"hi"<<endl;
-
+    //turns board frame to robot frame
     MatrixXd transformation_b_to_r = MatrixXd::Zero(4, 4);
     transformation_b_to_r <<  0, 1, 0, .6,
     						 -1, 0, 0,  0,
