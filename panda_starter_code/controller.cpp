@@ -10,6 +10,8 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <array>
+#include <fstream>
 
 #include <signal.h>
 bool runloop = true;
@@ -36,6 +38,8 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
 Matrix3d calculateRotationInTrajectory(double t);
+VectorXd generateTrajectory(Vector3d hitVelocity);
+Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi);
 void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
 
 
@@ -160,6 +164,19 @@ int main() {
 	Vector3d omega;
 	Vector3d alpha;
 
+		// open csv
+	std::ofstream myfile;
+    myfile.open ("trajectory.csv");
+
+    Vector3d hitVelocity; hitVelocity << 5.0*0.0254, 0.0, 0.0;
+	VectorXd poly_trajectory_coeffs = VectorXd::Zero(16); 
+	poly_trajectory_coeffs = generateTrajectory(hitVelocity);
+	cout<<poly_trajectory_coeffs(0)<<','<<poly_trajectory_coeffs(1)<<','<<poly_trajectory_coeffs(2)<<','<<poly_trajectory_coeffs(3)<<','<<poly_trajectory_coeffs(4)<<','<<poly_trajectory_coeffs(5)<<','<<poly_trajectory_coeffs(6)<<','<<poly_trajectory_coeffs(7)<<','<<poly_trajectory_coeffs(8)<<','<<poly_trajectory_coeffs(9)<<','<<poly_trajectory_coeffs(10)<<','<<poly_trajectory_coeffs(11)<<','<<poly_trajectory_coeffs(12)<<','<<poly_trajectory_coeffs(13)<<','<<poly_trajectory_coeffs(14)<<','<<poly_trajectory_coeffs(15)<<endl;
+	Vector3d end_position = Vector3d::Zero(3);
+	end_position = trajectoryPosition(poly_trajectory_coeffs, 9, -45*M_PI/180.0, 45*M_PI/180.0);
+
+	//cout<<poly_trajectory_coeffs<<endl;
+
 
 
 	while (runloop) {
@@ -244,7 +261,18 @@ int main() {
 			else if(state == POSORI_CONTROLLER)
 			{	
 				//if the robot reaches the desired position and is at rest, come out of the loop
-				if(robotReachedGoal(x,calculatePointInTrajectory(100),xdot,xddot,omega,alpha))	//100 is arbitrarily large, represents last point in traj
+				// if(robotReachedGoal(x,calculatePointInTrajectory(100),xdot,xddot,omega,alpha))	//100 is arbitrarily large, represents last point in traj
+				// {	
+				// 	printf("Going into WAIT_MODE..\n");
+				// 	mode = WAIT_MODE;
+				// 	redis_client.set(MODE_CHANGE_KEY,"wait");
+				// 	state = JOINT_CONTROLLER;
+				// 	joint_task->_desired_position = q_init_desired;
+				// }
+
+
+
+				if(robotReachedGoal(x,end_position,xdot,xddot,omega,alpha))	//100 is arbitrarily large, represents last point in traj
 				{	
 					printf("Going into WAIT_MODE..\n");
 					mode = WAIT_MODE;
@@ -259,9 +287,18 @@ int main() {
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
 
-				posori_task->_desired_position = calculatePointInTrajectory(t);
+				//posori_task->_desired_position = calculatePointInTrajectory(t);
 				posori_task->_desired_orientation = calculateRotationInTrajectory(t);
 				//printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
+
+				// myfile<<controller_counter<<endl;
+				//myfile <<controller_counter<<","<<poly_trajectory(controller_counter, 0)<<","<<poly_trajectory(controller_counter, 1)<<","<<poly_trajectory(controller_counter, 2)<<endl;
+				Vector3d position = Vector3d::Zero(3);
+				position = trajectoryPosition(poly_trajectory_coeffs, t, 45, M_PI/2);
+				myfile<<t<<","<<x(0)<<","<<x(1)<<","<<x(2)<<endl;
+				cout<<"x = "<<x(0)<<" y = "<<x(1)<<" z = "<<x(2)<<endl;
+				//cout<<position(0)<<","<<position(1)<<","<<position(2)<<endl;
+				posori_task->_desired_position = trajectoryPosition(poly_trajectory_coeffs, t, -45*M_PI/180.0, 45*M_PI/180.0);
 
 				// compute torques
 				posori_task->computeTorques(posori_task_torques);
@@ -287,7 +324,7 @@ int main() {
     std::cout << "Controller Loop run time  : " << end_time << " seconds\n";
     std::cout << "Controller Loop updates   : " << timer.elapsedCycles() << "\n";
     std::cout << "Controller Loop frequency : " << timer.elapsedCycles()/end_time << "Hz\n";
-
+    myfile.close();
 
 	return 0;
 }
@@ -428,75 +465,111 @@ Vector B - position right above lip
 
 */
 
-Matrix3d GenerateTrajectory(double theta, double psi, Vector3d hitVelocity)
+VectorXd generateTrajectory(Vector3d hitVelocity){
 
 	//values need to be measured
 	// radius of the arc
-	double r=20.125/2; 
-	double arc_length = 10.0;
+	double r=13.1475/2*0.0254; 
+	double arc_length = 10.074*0.0254;
 
 	//values below need to be tuned
 	double end_time = 9.0; //in seconds
 	double t1 = 0.0;
-	double t2 = end_time/3;
-	double t3 = 2*end_time/3;
+	double t2 = 3.0;
+	double t3 = 6.0;
 	double t4 = end_time;
 
-	Vector3d A; A<<0.0, -r - 1.0, 3.0;
-	Vector3d B; B<<0.0, -r, 0.5;
-	Vector3d C; C<<0.0, -arc_length, 0.0;
-	Vector3d D; D<<0.0, -4*arc_length/5, 0.0;
+	Vector3d A; A<<-5.5*0.0254, 5.0*0.0254, 0.0;
+	Vector3d B; B<<-3.0515*0.0254, 2.5*0.0254, 0.0;
+	Vector3d C; C<<4.0*0.0254, 0.0, 0.0;
+	Vector3d D; D<<5.0*0.0254, 3.0*0.0254, 0.0;
 
-	Vector3d B_velocity; B_velocity<< 0.0, 1.0, -1.0;
+	Vector3d B_velocity; B_velocity<< 5.0*0.0254, -1.0*0.0254, 0.0;
+	// hitVelocity << 1.0, 0.0, 0.0;
 
-	MatrixXd Eqns(16, 16);
-	VectorXd values;
+	MatrixXd Eqns = MatrixXd::Zero(16, 16);
+	VectorXd values = VectorXd::Zero(1, 16);
 	VectorXd coeffs;
 
 
-	Eqns<<1, 0, t1, 0, t1^2, 0, t1^3, 0, t1^4, 0, t1^5, 0, t1^6, 0, t1^7, 0,
-      	  0, 1, 0, t1, 0, t1^2, 0, t1^3, 0, t1^4, 0, t1^5, 0, t1^6, 0, t1^7,
-      	  0, 0, 1, 0, 2*t1, 0, 3*t1^2, 0, 4*t1^3, 0, 5*t1^4, 0, 6*t1^5, 0, 7*t1^6, 0.
-      	  0,  0 0 1 0 2*t1 0 3*t1^2 0 4*t1^3 0 5*t1^4 0 6*t1^5 0 7*t1^6;
-          1 0 t2 0 t2^2 0 t2^3 0 t2^4 0 t2^5 0 t2^6 0 t2^7 0;
-          0 1 0 t2 0 t2^2 0 t2^3 0 t2^4 0 t2^5 0 t2^6 0 t2^7;
-          0 0 1 0 2*t2 0 3*t2^2 0 4*t2^3 0 5*t2^4 0 6*t2^5 0 7*t2^6 0;
-          0 0 0 1 0 2*t2 0 3*t2^2 0 4*t2^3 0 5*t2^4 0 6*t2^5 0 7*t2^6;
-          1 0 t3 0 t3^2 0 t3^3 0 t3^4 0 t3^5 0 t3^6 0 t3^7 0;
-          0 1 0 t3 0 t3^2 0 t3^3 0 t3^4 0 t3^5 0 t3^6 0 t3^7;
-          0 0 1 0 2*t3 0 3*t3^2 0 4*t3^3 0 5*t3^4 0 6*t3^5 0 7*t3^6 0;
-          0 0 0 1 0 2*t3 0 3*t3^2 0 4*t3^3 0 5*t3^4 0 6*t3^5 0 7*t3^6;
-          1 0 t4 0 t4^2 0 t4^3 0 t4^4 0 t4^5 0 t4^6 0 t4^7 0;
-          0 1 0 t4 0 t4^2 0 t4^3 0 t4^4 0 t4^5 0 t4^6 0 t4^7;
-          0 0 1 0 2*t4 0 3*t4^2 0 4*t4^3 0 5*t4^4 0 6*t4^5 0 7*t4^6 0;
-          0 0 0 1 0 2*t4 0 3*t4^2 0 4*t4^3 0 5*t4^4 0 6*t4^5 0 7*t4^6;
+	Eqns<<1, 0, t1, 0, pow(t1, 2), 0, pow(t1, 3), 0, pow(t1, 4), 0, pow(t1, 5), 0, pow(t1, 6), 0, pow(t1, 7), 0,
+      	  0, 1, 0, t1, 0, pow(t1, 2), 0, pow(t1, 3), 0, pow(t1, 4), 0, pow(t1, 5), 0, pow(t1, 6), 0, pow(t1, 7),
+      	  0, 0, 1, 0, 2*t1, 0, 3*pow(t1, 2), 0, 4*pow(t1, 3), 0, 5*pow(t1, 4), 0, 6*pow(t1, 5), 0, 7*pow(t1, 6), 0,
+      	  0,  0, 0, 1, 0, 2*t1, 0, 3*pow(t1, 2), 0, 4*pow(t1, 3), 0, 5*pow(t1, 4), 0, 6*pow(t1, 5), 0, 7*pow(t1, 6),
+          1, 0, t2, 0, pow(t2, 2), 0, pow(t2, 3), 0, pow(t2, 4), 0, pow(t2, 5), 0, pow(t2, 6), 0, pow(t2,7), 0,
+          0, 1, 0, t2, 0, pow(t2, 2), 0, pow(t2, 3), 0, pow(t2, 4), 0, pow(t2, 5), 0, pow(t2, 6), 0, pow(t2,7),
+          0, 0, 1, 0, 2*t2, 0, 3*pow(t2, 2), 0, 4*pow(t2, 3), 0, 5*pow(t2, 4), 0, 6*pow(t2, 5), 0, 7*pow(t2, 6), 0,
+          0, 0, 0, 1, 0, 2*t2, 0, 3*pow(t2, 2), 0, 4*pow(t2, 3), 0, 5*pow(t2, 4), 0, 6*pow(t2, 5), 0, 7*pow(t2, 6),
+          1, 0, t3, 0, pow(t3, 2), 0, pow(t3, 3), 0, pow(t3, 4), 0, pow(t3, 5), 0, pow(t3, 6), 0, pow(t3, 7), 0,
+          0, 1, 0, t3, 0, pow(t3, 2), 0, pow(t3, 3), 0, pow(t3, 4), 0, pow(t3, 5), 0, pow(t3, 6), 0, pow(t3, 7),
+          0, 0, 1, 0, 2*t3, 0, 3*pow(t3, 2), 0, 4*pow(t3, 3), 0, 5*pow(t3, 4), 0, 6*pow(t3, 5), 0, 7*pow(t3, 6), 0,
+          0, 0, 0, 1, 0, 2*t3, 0, 3*pow(t3, 2), 0, 4*pow(t3, 3), 0, 5*pow(t3, 4), 0, 6*pow(t3, 5), 0, 7*pow(t3, 6),
+          1, 0, t4, 0, pow(t4, 2), 0, pow(t4, 3), 0, pow(t4, 4), 0, pow(t4, 5), 0, pow(t4, 6), 0, pow(t4, 7), 0,
+          0, 1, 0, t4, 0, pow(t4, 2), 0, pow(t4, 3), 0, pow(t4, 4), 0, pow(t4, 5), 0, pow(t4, 6), 0, pow(t4, 7),
+          0, 0, 1, 0, 2*t4, 0, 3*pow(t4, 2), 0, 4*pow(t4, 3), 0, 5*pow(t4, 4), 0, 6*pow(t4, 5), 0, 7*pow(t4, 6), 0,
+          0, 0, 0, 1, 0, 2*t4, 0, 3*pow(t4, 2), 0, 4*pow(t4, 3), 0, 5*pow(t4, 4), 0, 6*pow(t4, 5), 0, 7*pow(t4, 6);
 
-    values<<A(1), A(2), 0, 0, B(1), B(2), B_velocity(1), B_velocity(2), C(1), C(2), hitVelocity(1), hitVelocity(2), D(1), D(2), 0, 0;
-    coeffs = Eqns.colPivHouseholderQr().solve(values);
+    values << A(0), A(1), 0, 0, B(0), B(1), B_velocity(0), B_velocity(1), C(0), C(1), hitVelocity(0), hitVelocity(1), D(0), D(1), 0, 0;
+    //cout<<Eqns<<endl;
+    //cout<<values(0)<<','<<values(1)<<','<<values(2)<<','<<values(3)<<','<<values(4)<<','<<values(5)<<','<<values(6)<<','<<values(7)<<','<<values(8)<<','<<values(9)<<','<<values(10)<<','<<values(11)<<','<<values(12)<<','<<values(13)<<','<<values(14)<<','<<values(15)<<endl;
+    //cout<<A(1)<<','<<A(2)<<','<<0<<','<<0<<','<<B(1)<<','<<B(2)<<','<<B_velocity<<endl;
+    //values<<A(0), A(1), 0;
+    //values = values.transpose();
+    //coeffs = Eqns.fullPivLu().solve(values);
+    coeffs = Eqns.inverse()*values;
+    cout<<coeffs(0)<<','<<coeffs(1)<<','<<coeffs(2)<<','<<coeffs(3)<<','<<coeffs(4)<<','<<coeffs(5)<<','<<coeffs(6)<<','<<coeffs(7)<<','<<coeffs(8)<<','<<coeffs(9)<<','<<coeffs(10)<<','<<coeffs(11)<<','<<coeffs(12)<<','<<coeffs(13)<<','<<coeffs(14)<<','<<coeffs(15)<<endl;
 
+    return coeffs;
+}
+
+Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi)
+{
+	double r=13.1475/2*0.0254; 
+	double arc_length = 10.096*0.0254;
+	double x = 0.0; double y; double z;
     double dt = 0.001;
-    double t = 0.0;
-    int rows = (int) end_time/dt;
-    MatrixXd trajectory = MatrixXd::Zero(rows, 3);
-    for(int i = 0; t < rows; i++) {
-    	double x = 0.0; double y; double z;
-        y = coeffs(1) + coeffs(3)*t + coeffs(5)*(t^2) + coeffs(7)*(t^3) + coeffs(9)*(t^4) + coeffs(11)*(t^5) + coeffs(13)*(t^6) + coeffs(15)*(t^7);
-		z = coeffs(2) + coeffs(4)*t + coeffs(6)*(t^2) + coeffs(8)*(t^3) + coeffs(10)*(t^4) + coeffs(12)*(t^5) + coeffs(14)*(t^6) + coeffs(16)*(t^7);
-		trajectory(i, 0) = x;
-		trajectory(i, 1) = y;
-		trajectory(i, 2) = z;
-		t += dt;
-    }
+    double endtime = 9.0;
+    if (t>= 0 and t < endtime){
+    	y = coeffs(0) + coeffs(2)*t + coeffs(4)*(pow(t, 2)) + coeffs(6)*(pow(t, 3)) + coeffs(8)*(pow(t, 4)) + coeffs(10)*(pow(t, 5)) + coeffs(12)*(pow(t, 6)) + coeffs(14)*(pow(t, 7));
+		z = coeffs(1) + coeffs(3)*t + coeffs(5)*(pow(t, 2)) + coeffs(7)*(pow(t, 3)) + coeffs(9)*(pow(t, 4)) + coeffs(11)*(pow(t, 5)) + coeffs(13)*(pow(t, 6)) + coeffs(15)*(pow(t, 7)) + 0.15;
+	}else{
+		y = 0.0;
+		z = 0.15;
+	}
 
-    MatrixXd Transform(4, 4) << cos(- pi/2 + psi) -sin(- pi/2+ psi) 0 (L*sin(theta));
-     							sin(- pi/2 + psi) cos(- pi/2 +psi) 0 (-L*cos(theta));
-     							0 0 1 0;
-     							0 0 0 1];
+    MatrixXd transformation = MatrixXd::Zero(4, 4); 
+    transformation << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0, (arc_length*sin(theta)),
+     			 sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0, (-arc_length*cos(theta)),
+     			 0, 0, 1, 0,
+     			 0, 0, 0, 1;
 
+    // cout<<"hi"<<endl;
 
+    MatrixXd transformation_b_to_r = MatrixXd::Zero(4, 4);
+    transformation_b_to_r <<  0, 1, 0, .6,
+    						 -1, 0, 0,  0,
+    						  0, 0, 1, .3,
+    						  0, 0, 0,  1;
+    cout<<transformation_b_to_r<<endl;
 
+    //cout<<"x="<<x<<" "<<"y="<<y<<" "<<"z="<<z<<endl;
+    Vector3d trajectory = Vector3d::Zero(3);
+    VectorXd trajectory_augmented = VectorXd::Zero(4); 
+    trajectory_augmented<< x, y, z, 1;
+    //trajectory_augmented<< 0, 13.0*0.0254, 0.35*0.0254+0.3, 1;
+    //trajectory_augmented<< (arc_length*sin(theta)), (-arc_length*cos(theta)), 0, 1;
+    cout<<"before transformation: "<<trajectory_augmented(0)<<", "<<trajectory_augmented(1)<<", "<<trajectory_augmented(2)<<endl;
+    VectorXd trajectory_augmented_transformed = VectorXd::Zero(4);
+    trajectory_augmented_transformed = transformation_b_to_r * (transformation * trajectory_augmented);
+    //trajectory_augmented_transformed = transformation_b_to_r * trajectory_augmented;
 
+    // cout<<"xta="<<trajectory_augmented(0)<<" "<<"yta="<<trajectory_augmented(1)<<" "<<"zta="<<trajectory_augmented(2)<<endl;
+    trajectory = trajectory_augmented_transformed.leftCols(3);
+    cout<<"xt="<<trajectory(0)<<" "<<"yt="<<trajectory(1)<<" "<<"zt="<<trajectory(2)<<endl;
+    cout<<"t="<<t<<endl;
 
+    return trajectory;
+}
 
 
 
