@@ -4,7 +4,7 @@ snapshot and returns a list of coins
 '''
 
 
-from CoinClass import Coin
+from disk import *
 import numpy as np
 import cv2
 
@@ -24,8 +24,8 @@ Depth = 1220
 theta = -0.03
 
 
-#for colour of the coin
-WHITE_THRESHOLD = 160 #average value of pixes threshold to distinguish white from black coins
+#for colour of the disk
+WHITE_THRESHOLD = 160 #average value of pixes threshold to distinguish white from black disks
 BLACK_THRESHOLD = 120
 CSD = 5	#colour search distance
 
@@ -38,7 +38,7 @@ Y_BOUNDARY = 270
 #----------------------------------#
 
 # gets position of image in camera pixels 
-# and returns the colour of the coin
+# and returns the colour of the disk
 def isWhite(img,i):
 	avg = 0;
 	x = int(i[0])
@@ -87,7 +87,7 @@ def updateBoardCoins():
     	circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1.9,10,param1=50,param2=30,minRadius=8,maxRadius=12)
     	if (circles is not None):
 	    	for i in circles[0,:]:
-	    		coin = Coin()	#initialize the coin class
+	    		coin = Disk()	#initialize the coin class
 	    		if isWhite(img,i):#coin is white in colour
 	    			cv2.circle(cimg,(i[0],i[1]),2,(255,0,0),3)	#blue colour center marker for our coin 
 	    			#get the pixel value of the center of the coin
@@ -100,11 +100,11 @@ def updateBoardCoins():
 	    			X = np.cos(theta)*Xunrot - np.sin(theta)*Y
 	    			Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
 	    			if(inBoundary(X,Y)):
-		    			coin.setPosition(X,Y)
+		    			coin.set_position(X,Y)
 		    			if(isCue(X,Y)):
-		    				coin.setIdentity(3)
+		    				coin.set_identity(3)
 		    			else:
-		    				coin.setIdentity(1)	    				
+		    				coin.set_identity(1)	    				
 		    			coins.append(coin)
 	    		elif isBlack(img,i):#coin is black in colour
 	    			cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)	#red colour center marker for black (opponent)
@@ -118,8 +118,8 @@ def updateBoardCoins():
 	    			X = np.cos(theta)*Xunrot - np.sin(theta)*Y
 	    			Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
 	    			if(inBoundary(X,Y)):
-		    			coin.setPosition(X,Y)
-		    			coin.setIdentity(2)
+		    			coin.set_position(X,Y)
+		    			coin.set_identity(2)
 		    			coins.append(coin)
 	    		else:
 	    			pass #circle not of interest

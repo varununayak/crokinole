@@ -2,17 +2,37 @@
 import numpy as np
 
 class Disk:
-    def __init__(self, x_pos, y_pos, color):
+    
+    #identifiers
+    ROBOT = 1 #black
+    HUMAN = 2 #white
+    CUE = 3 #white and in a certain position (predetermined)
+
+    def __init__(self, x_pos = 0.0, y_pos = 0.0, identity = 2):
         self.origin = np.array([x_pos, y_pos])
-        self.color = color
         self.r = 15.5 # mm
         self.direction = np.array([0, 0])
+        self.identity = identity
+        if identity == ROBOT:
+            self.color = 'k'
+        else:
+            self.color = 'r'
 
     def __eq__(self, other):
         return np.array_equal(self.origin, other.origin)
 
     def __ne__(self, other):
         return not (np.array_equal(self.origin, other.origin))
+
+    def set_position(self,x,y):
+        self.origin(np.array([x, y]))
+
+    def set_identity(self,identity):
+        if (identity not in [ROBOT, HUMAN, CUE]):
+            raise Exception('identifier not recognized, use 1 for ROBOT disk, 2 for HUMAN disk, 3 for CUE disk')
+        else:
+            self.identity = identity
+
 
 ''' 
 calculates the contact point and resulting unit velocities of the two disks
