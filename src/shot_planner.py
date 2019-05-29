@@ -1,4 +1,4 @@
-'''
+s'''
     shot_planner.py
     
     given the location of all the disks on the board, choose a shot path and output the
@@ -70,10 +70,44 @@ def is_viable_path(cue, target, obstacles):
     return True
 
 
-if __name__ == "__main__":
-    # initialize disks    
-    opponent_disks = [Disk(100, 100, 'r'), Disk(40, 290, 'r'), Disk(380, 122, 'r'), Disk(80, -10, 'r'), Disk(-180, 40, 'r')]
+# if __name__ == "__main__":
+#     # initialize disks    
+#     opponent_disks = [Disk(100, 100, 'r'), Disk(40, 290, 'r'), Disk(380, 122, 'r'), Disk(80, -10, 'r'), Disk(-180, 40, 'r')]
     
+#     fig = plt.gcf()
+#     ax = fig.gca()
+
+#     # add circle objects for current disks
+#     for disk in opponent_disks:
+#         ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color, fill=False))
+    
+#     # initialize cue disk position
+#     cue_disk = Disk(-180, -180, 'b')
+#     ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
+
+#     # find possible path
+#     possible_angles = []
+#     for i in range(len(opponent_disks)):
+#         print "\ntrying target", i
+#         u = opponent_disks[i].origin - cue_disk.origin
+#         cue_disk.direction = u/np.linalg.norm(u)
+#         while is_viable_path(cue_disk, opponent_disks[i], opponent_disks):
+#             possible_angles.append(np.arctan2(cue_disk.direction[1], cue_disk.direction[0]))
+#             cue_disk.direction = rotate(cue_disk.direction, ANGLE_EPSILON)
+#         cue_disk.direction = rotate(u/np.linalg.norm(u), -ANGLE_EPSILON)
+#         while is_viable_path(cue_disk, opponent_disks[i], opponent_disks):
+#             possible_angles.append(np.arctan2(cue_disk.direction[1], cue_disk.direction[0]))
+#             cue_disk.direction = rotate(cue_disk.direction, -ANGLE_EPSILON)
+#     print "number of possible paths:", len(possible_angles)
+
+#     # plot circles
+#     ax.set_xlim(-BOARD_R, BOARD_R)
+#     ax.set_ylim(-BOARD_R, BOARD_R)
+#     ax.set_aspect('equal')
+#     plt.show(fig)
+
+
+def plan_shot(disks):
     fig = plt.gcf()
     ax = fig.gca()
 
@@ -82,7 +116,7 @@ if __name__ == "__main__":
         ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color, fill=False))
     
     # initialize cue disk position
-    cue_disk = Disk(-180, -180, 'b')
+    cue_disk = Disk(0, -180, 'b')
     ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
 
     # find possible path
@@ -99,12 +133,9 @@ if __name__ == "__main__":
             possible_angles.append(np.arctan2(cue_disk.direction[1], cue_disk.direction[0]))
             cue_disk.direction = rotate(cue_disk.direction, -ANGLE_EPSILON)
     print "number of possible paths:", len(possible_angles)
-            
-
 
     # plot circles
     ax.set_xlim(-BOARD_R, BOARD_R)
     ax.set_ylim(-BOARD_R, BOARD_R)
     ax.set_aspect('equal')
     plt.show(fig)
-
