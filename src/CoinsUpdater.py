@@ -16,12 +16,12 @@ focus_x = 986.1724
 focus_y = 994.4793
 
 #pixel center offset
-offset_pixel_x = 14
-offset_pixel_y = -0.34
+offset_pixel_x = -1.75
+offset_pixel_y = 13
 
 #Depth in mm, theta in radian
-Depth = 1220
-theta = -0.03
+Depth = 1220*254/np.sqrt(242**2 + 25.5**2)
+theta = -0.102
 
 
 #for colour of the disk

@@ -59,19 +59,19 @@ G = np.matmul(AI,Tform)
 
 #-------WHAT ARE YOU CALIBRATING--------#
 
-CALIB_DEPTH = False
-CALIB_ANGLE = False
+CALIB_DEPTH = True
+CALIB_ANGLE = True
 
 #-------CALIBRATION VALUES--------#
 #COPY THESE OVER TO CoinsUpdater.py
 
 #pixel center offset
-offset_pixel_x = 14
-offset_pixel_y = -0.34
+offset_pixel_x = -1.75
+offset_pixel_y = 13
 
 #Depth in mm, theta in radian
-Depth = 1220
-theta = -0.03
+Depth = 1220*254/np.sqrt(242**2 + 25.5**2)
+theta = -0.102
 
 #---------------------------------#
 
