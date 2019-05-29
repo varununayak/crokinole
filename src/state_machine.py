@@ -11,6 +11,10 @@ import redis
 import ast
 import time
 
+from CoinUpdater import *
+from disk import *
+from shot_planner import *
+
 MODE_CHANGE_KEY = "modechange"
 
 
@@ -30,9 +34,15 @@ myserver = redis.Redis(decode_responses=True)
 #transition from WAIT4KEY to EXECUTING
 def transition1():
 	#get the board state (coins and identities)
+	coins = updateBoardCoins()
+	print(coins[0].x,coins[0].y,coins[0].identity)
+
 	#plan the shot and get the shot parameters
+	plan_shot(coins)
+	
 	#pass the shot parameters over redis
 	#pass key over redis to make controller change state from waiting to executing
+	
 	myserver.set(MODE_CHANGE_KEY,"execute")
 	pass
 
