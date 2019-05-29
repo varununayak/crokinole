@@ -11,6 +11,7 @@ import cv2
 from matplotlib import pyplot as plt
 
 WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 120
 CSD = 5	#colour search distance
 
 A = np.array( [ [986.1724, 0,0]  ,  [0, 994.4793, 0] ,	[0,0,1] ])
@@ -88,6 +89,18 @@ def isWhite(img,i):
 	return True
 
 
+def isBlack(img,i):
+	avg = 0;
+	x = int(i[0])
+	y = int(i[1])
+	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
+	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
+
+	if avg > BLACK_THRESHOLD:
+		return False		
+	return True
+
+
 
 def main():
 	#capture the video with a VideoCapture object
@@ -111,6 +124,10 @@ def main():
 	    	if (circles is not None):
 
 		    	for i in circles[0,:]:
+
+		    		if isBlack(img,i):#coin is white in colou
+		    			cv2.circle(cimg,(i[0],i[1]),2,(0,255,0),3)	#blue colour center marker for our coin 
+		    		
 		    		# draw the outer circle
 		    		#cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
 		    		if isWhite(img,i):#coin is white in colou
@@ -126,7 +143,7 @@ def main():
 		    			if(CALIB_ANGLE):
 		    				Xunrot = X;
 		    				X = np.cos(theta)*Xunrot - np.sin(theta)*Y
-		    				Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
+		    				Y = np.sin(theta)*Xunrot + np.cos(theta)*Y	    		
 
 
 

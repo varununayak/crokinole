@@ -11,7 +11,7 @@ import redis
 import ast
 import time
 
-from CoinUpdater import *
+from CoinsUpdater import *
 from disk import *
 from shot_planner import *
 
@@ -35,7 +35,8 @@ myserver = redis.Redis(decode_responses=True)
 def transition1():
 	#get the board state (coins and identities)
 	coins = updateBoardCoins()
-	print(coins[0].x,coins[0].y,coins[0].identity)
+	for coin in coins:
+		print(coin.origin[0],coin.origin[1],coin.identity)
 
 	#plan the shot and get the shot parameters
 	plan_shot(coins)

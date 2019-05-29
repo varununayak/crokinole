@@ -292,7 +292,7 @@ int main() {
 			{
 				joint_task->reInitializeTask();
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				joint_task->_desired_position(dof-2) = robot->_q(dof-2) + (t-t_3)*1;
+				joint_task->_desired_position(dof-2) = robot->_q(dof-2) + (t-t_3)*0.1;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0; 

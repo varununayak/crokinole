@@ -1,4 +1,4 @@
-s'''
+'''
     shot_planner.py
     
     given the location of all the disks on the board, choose a shot path and output the
@@ -107,7 +107,7 @@ def is_viable_path(cue, target, obstacles):
 #     plt.show(fig)
 
 
-def plan_shot(disks):
+def plan_shot(opponent_disks):
     fig = plt.gcf()
     ax = fig.gca()
 
@@ -116,7 +116,7 @@ def plan_shot(disks):
         ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color, fill=False))
     
     # initialize cue disk position
-    cue_disk = Disk(0, -180, 'b')
+    cue_disk = Disk(-156, -186, 'b')
     ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
 
     # find possible path

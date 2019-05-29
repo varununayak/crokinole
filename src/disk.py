@@ -13,7 +13,7 @@ class Disk:
         self.r = 15.5 # mm
         self.direction = np.array([0, 0])
         self.identity = identity
-        if identity == ROBOT:
+        if identity == 1:
             self.color = 'k'
         else:
             self.color = 'r'
@@ -25,10 +25,10 @@ class Disk:
         return not (np.array_equal(self.origin, other.origin))
 
     def set_position(self,x,y):
-        self.origin(np.array([x, y]))
+        self.origin =np.array([x, y])
 
     def set_identity(self,identity):
-        if (identity not in [ROBOT, HUMAN, CUE]):
+        if (identity not in [1, 2, 3]):
             raise Exception('identifier not recognized, use 1 for ROBOT disk, 2 for HUMAN disk, 3 for CUE disk')
         else:
             self.identity = identity

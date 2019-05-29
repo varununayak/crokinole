@@ -9,4 +9,4 @@ coins = updateBoardCoins()
 
 
 for coin in coins:
-	print(coin.x,coin.y,coin.identity)
+	print(coin.origin[0],coin.origin[1],coin.identity)
