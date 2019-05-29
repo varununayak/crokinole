@@ -498,8 +498,8 @@ VectorXd generateTrajectory(Vector3d hitVelocity){
 
 
 	MatrixXd Eqns = MatrixXd::Zero(16, 16);
-	VectorXd values = VectorXd::Zero(1, 16);
-	VectorXd coeffs;
+	VectorXd values = VectorXd::Zero(16);
+	VectorXd coeffs = VectorXd::Zero(16);
 
 
 	Eqns<<1, 0, t1, 0, pow(t1, 2), 0, pow(t1, 3), 0, pow(t1, 4), 0, pow(t1, 5), 0, pow(t1, 6), 0, pow(t1, 7), 0,
@@ -576,7 +576,7 @@ Vector3d trajectoryPosition(VectorXd coeffs, double t, double theta, double psi)
     //trajectory_augmented_transformed = transformation_b_to_r * trajectory_augmented;
 
     // cout<<"xta="<<trajectory_augmented(0)<<" "<<"yta="<<trajectory_augmented(1)<<" "<<"zta="<<trajectory_augmented(2)<<endl;
-    trajectory = trajectory_augmented_transformed.leftCols(3);
+    trajectory = trajectory_augmented_transformed.head(3);
     cout<<"xt="<<trajectory(0)<<" "<<"yt="<<trajectory(1)<<" "<<"zt="<<trajectory(2)<<endl;
     cout<<"t="<<t<<endl;
 
