@@ -10,9 +10,9 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 120
-CSD = 5	#colour search distance
+WHITE_THRESHOLD = 190 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 150
+CSD = 10	#colour search distance
 
 A = np.array( [ [986.1724, 0,0]  ,  [0, 994.4793, 0] ,	[0,0,1] ])
 
@@ -127,7 +127,7 @@ def main():
 
 		    		if isBlack(img,i):#coin is white in colou
 		    			cv2.circle(cimg,(i[0],i[1]),2,(0,255,0),3)	#blue colour center marker for our coin 
-		    		
+
 		    		# draw the outer circle
 		    		#cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
 		    		if isWhite(img,i):#coin is white in colou
