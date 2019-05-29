@@ -23,6 +23,7 @@ const string robot_file = "./resources/panda_arm.urdf";
 
 #define JOINT_CONTROLLER      0
 #define POSORI_CONTROLLER     1
+#define JOINT_CONTROLLER_SHOT 2
 
 #define WAIT_MODE 0
 #define EXECUTE_MODE 1
@@ -63,6 +64,14 @@ const std::array<double, 7> joint_torques_limits = {85, 85, 85, 85, 10, 10, 10};
 
 
 unsigned long long controller_counter = 0;
+
+//time slots for which pieces of the trajectory are executed
+double t_0 = 0;
+double t_1 = 5;
+double t_2 = 10;
+double t_3 = 15;
+double t_4 = 20;
+
 
 // const bool flag_simulation = false;
 const bool flag_simulation = true;
@@ -184,7 +193,11 @@ int main() {
 		
 		if(mode == WAIT_MODE)
 		{	
-			
+			joint_task->reInitializeTask();
+			N_prec.setIdentity();
+			joint_task->updateTaskModel(N_prec);
+			command_torques = joint_task_torques;
+
 			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
 			{	
 				mode = EXECUTE_MODE;
@@ -237,19 +250,26 @@ int main() {
 					joint_task->_kp = 0;
 
 					state = POSORI_CONTROLLER;
+					controller_counter = 0;
 				}
 			}
 
 			else if(state == POSORI_CONTROLLER)
 			{	
 				//if the robot reaches the desired position and is at rest, come out of the loop
-				if(robotReachedGoal(x,calculatePointInTrajectory(100),xdot,xddot,omega,alpha))	//100 is arbitrarily large, represents last point in traj
+				if(robotReachedGoal(x,calculatePointInTrajectory(100),xdot,xddot,omega,alpha) && t>t_4)	//100 is arbitrarily large, represents last point in traj
 				{	
+					printf("Reached Final Goal \n");
 					printf("Going into WAIT_MODE..\n");
 					mode = WAIT_MODE;
 					redis_client.set(MODE_CHANGE_KEY,"wait");
 					state = JOINT_CONTROLLER;
 					joint_task->_desired_position = q_init_desired;
+				}
+				if( t > t_3 && t < t_4)
+				{
+					cout << "Shooting" << endl;
+					state = JOINT_CONTROLLER_SHOT;
 				}
 
 				// update task model and set hierarchy
@@ -267,6 +287,32 @@ int main() {
 				joint_task->computeTorques(joint_task_torques);
 
 				command_torques = posori_task_torques + joint_task_torques;
+			}
+			else if(state == JOINT_CONTROLLER_SHOT)
+			{
+				joint_task->reInitializeTask();
+				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
+				joint_task->_desired_position(dof-2) = robot->_q(dof-2) + (t-t_3)*1;
+				N_prec.setIdentity();
+				joint_task->updateTaskModel(N_prec);
+				joint_task->_kp = 250.0; 
+
+				// compute torques
+				joint_task->computeTorques(joint_task_torques);
+				
+				command_torques = joint_task_torques;
+
+				if( t > t_4)
+				{	
+					cout << "Done Shooting" << endl;
+					posori_task->reInitializeTask();					
+					posori_task->_desired_position = calculatePointInTrajectory(t);
+					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
+					posori_task->_desired_orientation = calculateRotationInTrajectory(t);
+					joint_task->reInitializeTask();
+					joint_task->_kp = 0;
+					state = POSORI_CONTROLLER;
+				}
 			}
 
 			// send to redis
@@ -298,7 +344,6 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
 	if(error_norm<epsilon)
 	{	
-		printf("Reached Goal \n");
 		return true;
 	} 
 	return false;
@@ -320,22 +365,19 @@ Vector3d calculatePointInTrajectory(double t)
 {	
 	// diameter of board is 20.125 in, convert to m:
 	double r=20.125/2*0.0254; 
-	double t_start = 0;
-	double t_1 = 5;
-	double t_2 = 10;
-
+	
 	double x_offset = 0.7; //need to calibrate
 	double y_offset = 0; //need to calibrate
-	Vector3d xh; xh << 0.32,-0.35,0.5;	//calibrate this
+	Vector3d xh; xh << 0.32,0.35,0.7;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
 	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.5;	//calibrate this
 	Vector3d xcd; xcd << r*sin(-3*M_PI/4)+x_offset, r*cos(-3*M_PI/4)+y_offset, 0.5; //calculate this - get from redis
 
 	Vector3d x; 
 
-	if(inRange(t,t_start,t_1))
+	if(inRange(t,t_0,t_1))
 	{
-		//set positions according to analytical functions
+		//home position to cue coin position
 		x =  xh + (xc  -  xh )*(t-0)/(5);
 	}
 	else if (inRange(t,t_1,t_2))
@@ -357,10 +399,18 @@ Vector3d calculatePointInTrajectory(double t)
 
 		x << r*sin(new_t)+x_offset, r*cos(new_t)+y_offset, xc(2);
 	}
-	else
+	else if (inRange(t,t_2,t_3))
 	{	
 		x = xcd;
 
+	}
+	else if (inRange(t,t_3,t_4))
+	{
+		x = xcd; //shooting 
+	}
+	else
+	{
+		x = xh;
 	}
 
 	return x;
@@ -378,21 +428,43 @@ Matrix3d calculateRotationInTrajectory(double t)
 	Matrix3d rot;
 	Matrix3d home_orientation;
 
-	home_orientation << 1,0,0,
-	 					0,1,0,
-	 					0,0,-1;
+	home_orientation <<1,0,0,
+	 				0,-1,0,
+	 				0,0,-1;
 
-	if(inRange(t,0,5))
+	if(inRange(t,t_0,t_1)) 
 	{
 	 rot =home_orientation;
 	 }
-	 else if(inRange(t,5,10))  //final orientation
+	 else if(inRange(t,t_1,t_2)) 
+	 {
+	 	//rotate -90 degrees to gather the coin
+	 	rot =  AngleAxisd(-M_PI/2, Vector3d::UnitZ()).toRotationMatrix() *home_orientation;
+	 	cout << rot << endl;
+		
+	 }
+	 else if (inRange(t,t_2,t_3)) 
+	 {
+	 	double psi; psi = 135*M_PI/180.0; //get psi from redis
+	 	Matrix3d hit_rot;
+	 	hit_rot << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0,
+     			 		   sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0,
+     					   0, 0, 1;
+	 	rot = hit_rot*home_orientation;
+		
+	 }
+	 else if(inRange(t,t_3,t_4))
+	 {
+	 	double psi; psi = 135*M_PI/180.0; //get psi from redis
+	 	Matrix3d hit_rot;
+	 	hit_rot << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0,
+     			 		   sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0,
+     					   0, 0, 1;
+	 	rot = hit_rot*home_orientation;
+	 }
+	 else
 	 {
 	 	rot = home_orientation;
-		// rot = AngleAxisd(M_PI/4, Vector3d::UnitY())*home_orientation;
-	 }
-	 else{
-		rot = home_orientation;
 	 }
 
 	 return rot;
@@ -419,3 +491,4 @@ void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof)
 
 	}
 }
+
