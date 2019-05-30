@@ -39,7 +39,7 @@ Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
 Matrix3d calculateRotationInTrajectory(double t);
 double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length);
-double flick(double t, double total_time, double start_angle, double end_angle);
+double flick(double t, double time, double start_angle, double end_angle);
 void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
 
 
@@ -179,9 +179,10 @@ int main() {
 	cout<<"start angle in deg is "<< endl;
 	cin>>start_angle_deg;
 	start_angle = start_angle_deg * M_PI/180.0;
+	cout << start_angle << endl;
 	end_angle = start_angle + M_PI;
 
-	double total_time;
+	double total_time = 0;
 	total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
 	cout<<"total_time is "<<total_time<<endl;
 
@@ -516,16 +517,16 @@ Matrix3d calculateRotationInTrajectory(double t)
 }
 
 double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length){
-	double total_time; double angle_range; 
+	double time; double angle_range; 
 	angle_range = abs(end_angle - start_angle);
-	total_time = angle_range*ee_length/hit_velocity;
-	return total_time;
+	time = angle_range*ee_length/hit_velocity;
+	return time;
 }
 //inputs are in radians, output in radians
-double flick(double t, double total_time, double start_angle, double end_angle){
+double flick(double t, double time, double start_angle, double end_angle){
 	double desired_q; double angle_range; 
 	angle_range = abs(end_angle - start_angle);
-	desired_q = angle_range * t/total_time + start_angle;
+	desired_q = angle_range * t/time + start_angle;
 	return desired_q;
 }
 
