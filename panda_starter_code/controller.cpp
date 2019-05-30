@@ -38,6 +38,8 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
 Matrix3d calculateRotationInTrajectory(double t);
+double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length);
+double flick(double t, double total_time, double start_angle, double end_angle);
 void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
 
 
@@ -72,6 +74,7 @@ double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
 double t_4 = 20;
+const double ee_length = 4.5*0.0254; //4.5 inches
 
 
 // const bool flag_simulation = false;
@@ -169,6 +172,18 @@ int main() {
 	Vector3d omega;
 	Vector3d alpha;
 
+	//retrieve hit velocity through redis
+	double hit_velocity; double start_angle_deg; double start_angle; double end_angle;
+	cout << "set hit velocity to: "<<endl;
+	cin>>hit_velocity;
+	cout<<"start angle in deg is "<< endl;
+	cin>>start_angle_deg;
+	start_angle = start_angle_deg * M_PI/180.0;
+	end_angle = start_angle + 180.0;
+
+	double total_time;
+	total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
+	cout<<"total_time is "<<total_time<<endl;
 
 
 	while (runloop) {
@@ -267,10 +282,11 @@ int main() {
 					state = JOINT_CONTROLLER;
 					joint_task->_desired_position = q_init_desired;
 				}
-				if( t > t_3 && t < t_4)
+				if( t > t_3 && t < t_3+total_time)
 				{
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
+					controller_counter = 0;
 				}
 
 				// update task model and set hierarchy
@@ -293,7 +309,9 @@ int main() {
 			{
 				joint_task->reInitializeTask();
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				joint_task->_desired_position(dof-1) = robot->_q(dof-1) - (t-t_3)*0.05;
+				//joint_task->_desired_position(dof-1) = flick(t, total_time, start_angle, end_angle);
+				joint_task->_desired_position(dof-1) = M_PI;
+				cout<<"t is "<<t<<endl;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0; 
@@ -303,7 +321,7 @@ int main() {
 				
 				command_torques = joint_task_torques;
 
-				if( t > t_4)
+				if( t > (t_3 + total_time))
 				{	
 					cout << "Done Shooting" << endl;
 					posori_task->reInitializeTask();					
@@ -470,6 +488,20 @@ Matrix3d calculateRotationInTrajectory(double t)
 
 	 return rot;
 
+}
+
+double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length){
+	double total_time; double angle_range; 
+	angle_range = abs(end_angle - start_angle);
+	total_time = angle_range*ee_length/hit_velocity;
+	return total_time;
+}
+//inputs are in radians, output in radians
+double flick(double t, double total_time, double start_angle, double end_angle){
+	double desired_q; double angle_range; 
+	angle_range = abs(end_angle - start_angle);
+	desired_q = angle_range * t/total_time + start_angle;
+	return desired_q;
 }
 
 
