@@ -28,6 +28,9 @@ std::string JOINT_VELOCITIES_KEY;
 std::string JOINT_TORQUES_SENSED_KEY;
 
 
+
+
+
 // - model
 std::string MASSMATRIX_KEY;
 std::string CORIOLIS_KEY;
@@ -37,10 +40,15 @@ std::string ROBOT_GRAVITY_KEY;
 int main() {
 
 	
-
-	JOINT_ANGLES_KEY = "sai2::cs225a::panda_robot::sensors::q";
-	JOINT_VELOCITIES_KEY = "sai2::cs225a::panda_robot::sensors::dq";
+	JOINT_ANGLES_KEY  = "sai2::FrankaPanda::sensors::q";
+	JOINT_VELOCITIES_KEY = "sai2::FrankaPanda::sensors::dq";
 	
+	//soft safety values
+Eigen::VectorXd jmax;
+ jmax.resize(7);
+jmax << 2.7, 1.6, 2.7, -0.2, 2.7, 3.6, 2.7;
+Eigen::VectorXd jmin; jmin.resize(7);
+jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
 
 	// start redis client
 	auto redis_client = RedisClient();
@@ -62,7 +70,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(0,0,0.07);
+	const Vector3d control_point =Vector3d(-0.08,-0.064,0.066);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 	Vector3d x;//quantity to store current task space position
@@ -90,7 +98,8 @@ int main() {
 		robot->linearVelocity(xdot,control_link,control_point); //velocity of end effector 
 		robot->rotation(R,control_link);
 
-		cout << "\n\n---------------------\n Position of EE = \n" << x.transpose() << endl;
+		cout << "\n\n---------------------\n Position of EE = \n" << x.transpose() << "\n"<< endl;
+		cout << setprecision(2) << fixed << "JOINT ANGLES: \n" << jmin.transpose() << endl << robot->_q.transpose() << endl << jmax.transpose() << endl << "\n";
 		cout << "\n Rotation Matrix = \n" << R << "\n---------------------\n" << endl;
 
 

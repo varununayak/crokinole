@@ -120,7 +120,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(0,0,0.07);
+	const Vector3d control_point = Vector3d(0.08,0.064,0.066);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 #ifdef USING_OTG
@@ -292,7 +292,7 @@ int main() {
 			{
 				joint_task->reInitializeTask();
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				joint_task->_desired_position(dof-2) = robot->_q(dof-2) + (t-t_3)*0.1;
+				joint_task->_desired_position(dof-1) = robot->_q(dof-1) - (t-t_3)*0.05;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0; 
@@ -429,8 +429,8 @@ Matrix3d calculateRotationInTrajectory(double t)
 	Matrix3d home_orientation;
 
 	home_orientation <<1,0,0,
-	 				0,-1,0,
-	 				0,0,-1;
+	 				0,0,-1,
+	 				0,1,0;
 
 	if(inRange(t,t_0,t_1)) 
 	{

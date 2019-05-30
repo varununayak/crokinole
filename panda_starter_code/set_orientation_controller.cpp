@@ -87,7 +87,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(0,0,0.07);
+	const Vector3d control_point = Vector3d(-0.08,-0.064,0.066);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 #ifdef USING_OTG
@@ -170,10 +170,10 @@ int main() {
 				posori_task->reInitializeTask();
 				posori_task->_desired_position += Vector3d(-0.1,0.1,0.1);
 				Matrix3d rot;
-				 rot << -1,0,0,
-	 				0,1,0,
-	 				0,0,-1;
-				posori_task->_desired_orientation = AngleAxisd(M_PI, Vector3d::UnitZ()).toRotationMatrix()*rot;// AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
+				 rot  <<1,0,0,
+	 				0,0,-1,
+	 				0,1,0;
+				posori_task->_desired_orientation = rot;// AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task->_desired_orientation;
 
 				joint_task->reInitializeTask();
 				joint_task->_kp = 0;
