@@ -186,6 +186,9 @@ int main() {
 	total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
 	cout<<"total_time is "<<total_time<<endl;
 
+	double shot_angular_velocity = 0;
+	shot_angular_velocity = M_PI/total_time;
+
 
 	while (runloop) {
 		// wait for next scheduled loop
@@ -313,27 +316,34 @@ int main() {
 				double increment = 5.0;
 				double command_time = 0.0;
 				cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
-				if(t-t_3 < total_time/increment){
+				if(t>t_3 && t<t_4){
+					joint_task->_desired_position(dof-1) = start_angle;
+				}else if(t-t_4 < total_time/increment){
 					command_time = total_time/increment;
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
 				//joint_task->_desired_position(dof-1) = M_PI;
 				cout<<"t is "<<t<<endl;
-				} else if(t-t_3 < (2*(total_time/increment))){
+				} else if(t-t_4 < (2*(total_time/increment))){
 					command_time = 2*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-				} else if(t-t_3 < (3*(total_time/increment))){
+				} else if(t-t_4 < (3*(total_time/increment))){
 					command_time = 3*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-				}else if(t-t_3 < (4*(total_time/increment))){
+				}else if(t-t_4 < (4*(total_time/increment))){
 					command_time = 4*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
 				}else {
 					command_time = 5*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
 				}
 				
@@ -345,9 +355,8 @@ int main() {
 				joint_task->computeTorques(joint_task_torques);
 				
 				command_torques = joint_task_torques;
-				cout<<"resulting position is "<<robot->_q<<endl;
 
-				if( t > (t_3 + total_time))
+				if( t > (t_4 + total_time))
 				{	
 					cout << "Done Shooting" << endl;
 					posori_task->reInitializeTask();					
