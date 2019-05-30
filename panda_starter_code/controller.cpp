@@ -286,7 +286,6 @@ int main() {
 				{
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
-					controller_counter = 0;
 				}
 
 				// update task model and set hierarchy
@@ -309,8 +308,8 @@ int main() {
 			{
 				joint_task->reInitializeTask();
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				//joint_task->_desired_position(dof-1) = flick(t, total_time, start_angle, end_angle);
-				joint_task->_desired_position(dof-1) = M_PI;
+				joint_task->_desired_position(dof-1) = flick(t-t_3, total_time, start_angle, end_angle);
+				//joint_task->_desired_position(dof-1) = M_PI;
 				cout<<"t is "<<t<<endl;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
