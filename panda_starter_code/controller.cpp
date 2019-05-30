@@ -179,7 +179,7 @@ int main() {
 	cout<<"start angle in deg is "<< endl;
 	cin>>start_angle_deg;
 	start_angle = start_angle_deg * M_PI/180.0;
-	end_angle = start_angle + 180.0;
+	end_angle = start_angle + M_PI;
 
 	double total_time;
 	total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
@@ -205,6 +205,7 @@ int main() {
 		//calculate current time;
 		double dt = 0.001;
 		double t = controller_counter*dt;
+
 
 		
 		if(mode == WAIT_MODE)
@@ -308,9 +309,33 @@ int main() {
 			{
 				joint_task->reInitializeTask();
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				joint_task->_desired_position(dof-1) = flick(t-t_3, total_time, start_angle, end_angle);
+				double increment = 5.0;
+				double command_time = 0.0;
+				cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
+				if(t-t_3 < total_time/increment){
+					command_time = total_time/increment;
+					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
 				//joint_task->_desired_position(dof-1) = M_PI;
 				cout<<"t is "<<t<<endl;
+				} else if(t-t_3 < (2*(total_time/increment))){
+					command_time = 2*(total_time/increment);
+					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				} else if(t-t_3 < (3*(total_time/increment))){
+					command_time = 3*(total_time/increment);
+					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				}else if(t-t_3 < (4*(total_time/increment))){
+					command_time = 4*(total_time/increment);
+					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				}else {
+					command_time = 5*(total_time/increment);
+					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				}
+				
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0; 
@@ -319,6 +344,7 @@ int main() {
 				joint_task->computeTorques(joint_task_torques);
 				
 				command_torques = joint_task_torques;
+				cout<<"resulting position is "<<robot->_q<<endl;
 
 				if( t > (t_3 + total_time))
 				{	
