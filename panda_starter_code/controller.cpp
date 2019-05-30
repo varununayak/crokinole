@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <array>
 
 #include <signal.h>
 bool runloop = true;
