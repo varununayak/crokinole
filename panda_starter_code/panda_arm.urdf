@@ -135,7 +135,7 @@
       <visual>
           <origin xyz="0 0 0.05" rpy="-1.571 0 -1.571" />
         <geometry>
-          <mesh filename="../../../Model/meshes/Assembly_sideEE.obj" scale="0.001 0.001 0.001"/>
+          <mesh filename="../../../Model/meshes/newEE.obj" scale="0.001 0.001 0.001"/>
         </geometry>
       </visual>
       <!--<visual>
