@@ -10,9 +10,7 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-WHITE_THRESHOLD = 190 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 150
-CSD = 10	#colour search distance
+
 
 A = np.array( [ [986.1724, 0,0]  ,  [0, 994.4793, 0] ,	[0,0,1] ])
 
@@ -60,19 +58,27 @@ G = np.matmul(AI,Tform)
 
 #-------WHAT ARE YOU CALIBRATING--------#
 
-CALIB_DEPTH = True
-CALIB_ANGLE = True
+
+CALIB_DEPTH = False
+CALIB_ANGLE = False
 
 #-------CALIBRATION VALUES--------#
+
 #COPY THESE OVER TO CoinsUpdater.py
 
+
+WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 150
+CSD = 10	#colour search distance
+
+
 #pixel center offset
-offset_pixel_x = -1.75
-offset_pixel_y = 13
+offset_pixel_x = 7.75
+offset_pixel_y = 0.349
 
 #Depth in mm, theta in radian
-Depth = 1220*254/np.sqrt(242**2 + 25.5**2)
-theta = -0.102
+Depth = 1220
+theta = 0
 
 #---------------------------------#
 
@@ -125,6 +131,7 @@ def main():
 
 		    	for i in circles[0,:]:
 
+
 		    		if isBlack(img,i):#coin is white in colou
 		    			cv2.circle(cimg,(i[0],i[1]),2,(0,255,0),3)	#blue colour center marker for our coin 
 
@@ -164,13 +171,13 @@ def main():
 							cv2.circle(cimg,(320,240), 2,(255,0,0),3)							
 							print(pixel_x_cam + offset_pixel_x,pixel_y_cam+offset_pixel_y,"Update offset values")
 
-					cv2.imshow('Crokinole Detected Coins',cimg)		
+					
 
 		    		#else:
 
 		    			#cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)	#red colour center marker for black (opponent)
 			
-			
+			cv2.imshow('Crokinole Detected Coins',cimg)		
 
 	        if cv2.waitKey(1) & 0xFF == ord('q'):
 	            break

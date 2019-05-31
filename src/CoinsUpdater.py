@@ -11,6 +11,10 @@ import cv2
 
 #-----CALIBRATED VALUES HERE-----#
 
+WHITE_THRESHOLD = 220 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 180
+CSD = 10	
+
 #focal lengths
 focus_x = 986.1724
 focus_y = 994.4793
@@ -23,17 +27,12 @@ offset_pixel_y = 13
 Depth = 1220*254/np.sqrt(242**2 + 25.5**2)
 theta = -0.102
 
+#----------------------------------#
 
-#for colour of the disk
-WHITE_THRESHOLD = 160 #average value of pixes threshold to distinguish white from black disks
-BLACK_THRESHOLD = 120
-CSD = 5	#colour search distance
+CUE_POSITION_X = -156
+CUE_POSITION_Y = -186
 
-CUE_POSITION_X = -156;
-CUE_POSITION_Y = -186;
-
-X_BOUNDARY = 270
-Y_BOUNDARY = 270
+BOUNDARY_RADIUS = 260
 
 #----------------------------------#
 
@@ -60,13 +59,13 @@ def isBlack(img,i):
 	return False
 
 def isCue(X,Y):
-	epsilion = 5 #error in mm
+	epsilion = 10 #error in mm
 	if( np.sqrt(  (X-CUE_POSITION_X)**2 + (Y-CUE_POSITION_Y)**2 ) ) < epsilion:
 		return True
 	return False 
 
 def inBoundary(X,Y):
-	return ( (abs(X)<X_BOUNDARY) and (abs(Y) < Y_BOUNDARY) and ( np.sqrt(X**2 + Y**2) > 5) ) 
+	return ( ( np.sqrt(X**2 + Y**2) < BOUNDARY_RADIUS) and ( np.sqrt(X**2 + Y**2) > 10) ) 
 
 def updateBoardCoins():
 	coins = [] 
