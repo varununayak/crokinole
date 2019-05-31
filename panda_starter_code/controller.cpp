@@ -125,7 +125,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(0.08,0.064,0.066);
+	const Vector3d control_point = Vector3d(0.111,0.0064,0.0625);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 #ifdef USING_OTG
