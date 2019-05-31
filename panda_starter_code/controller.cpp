@@ -25,6 +25,7 @@ const string robot_file = "./resources/panda_arm.urdf";
 #define JOINT_CONTROLLER      0
 #define POSORI_CONTROLLER     1
 #define JOINT_CONTROLLER_SHOT 2
+#define END_SHOT              3
 
 #define WAIT_MODE 0
 #define EXECUTE_MODE 1
@@ -73,7 +74,7 @@ double t_0 = 0;
 double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
-double t_4 = 20;
+double t_4 = 22;
 const double ee_length = 4.5*0.0254; //4.5 inches
 
 
@@ -173,21 +174,22 @@ int main() {
 	Vector3d alpha;
 
 	//retrieve hit velocity through redis
-	double hit_velocity; double start_angle_deg; double start_angle; double end_angle;
+	double hit_velocity; double start_angle_deg; double start_angle; double end_angle; double swing_angle;
+	swing_angle = 120*M_PI/180.0;
 	cout << "set hit velocity to: "<<endl;
 	cin>>hit_velocity;
 	cout<<"start angle in deg is "<< endl;
 	cin>>start_angle_deg;
 	start_angle = start_angle_deg * M_PI/180.0;
 	cout << start_angle << endl;
-	end_angle = start_angle + M_PI;
+	end_angle = start_angle + swing_angle;
 
 	double total_time = 0;
 	total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
 	cout<<"total_time is "<<total_time<<endl;
 
 	double shot_angular_velocity = 0;
-	shot_angular_velocity = M_PI/total_time;
+	shot_angular_velocity = swing_angle/total_time;
 
 
 	while (runloop) {
@@ -210,13 +212,17 @@ int main() {
 		double dt = 0.001;
 		double t = controller_counter*dt;
 
-
+		// cout<<"joint position max is "<<joint_position_max[1]<<", "<<joint_position_max[4]<<", "<<joint_position_max[5]<<", "<<endl;
+		// cout<<"robot joint positions: "<<robot->_q(1)<<", "<<robot->_q(4)<<", "<<robot->_q(5)<<", "<<endl;
+		// cout<<"joint position min is "<<joint_position_min[1]<<", "<<joint_position_min[4]<<", "<<joint_position_min[5]<<", "<<endl;
 		
 		if(mode == WAIT_MODE)
 		{	
+			cout<<"in wait mode"<<endl;
 			joint_task->reInitializeTask();
 			N_prec.setIdentity();
 			joint_task->updateTaskModel(N_prec);
+			joint_task->computeTorques(joint_task_torques);
 			command_torques = joint_task_torques;
 
 			if(redis_client.get(MODE_CHANGE_KEY) == "execute")
@@ -226,8 +232,7 @@ int main() {
 			}
 
 		}
-		else if(mode == EXECUTE_MODE)
-		{		
+		else if(mode == EXECUTE_MODE){		
 
 			// update model
 			if(flag_simulation)
@@ -313,39 +318,41 @@ int main() {
 			{
 				joint_task->reInitializeTask();
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				double increment = 5.0;
+				double increment = 3.0;
 				double command_time = 0.0;
+
+				cout<<"joint position max is "<<joint_position_max[dof-1];
 				cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
+				cout<<"joint position min is "<<joint_position_min[dof-1];
+
 				if(t>t_3 && t<t_4){
 					joint_task->_desired_position(dof-1) = start_angle;
-				}else if(t-t_4 < total_time/increment){
+				}else if((t-t_4) <= total_time/increment){
 					command_time = total_time/increment;
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				//joint_task->_desired_position(dof-1) = M_PI;
 				cout<<"t is "<<t<<endl;
-				} else if(t-t_4 < (2*(total_time/increment))){
+				} else if((t-t_4) <= (2*(total_time/increment))){
 					command_time = 2*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-				} else if(t-t_4 < (3*(total_time/increment))){
+					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+				} else if((t-t_4) <= (3*(total_time/increment))){
 					command_time = 3*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
-					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
+					joint_task->_desired_velocity(dof-1) = 0.0;
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-				}else if(t-t_4 < (4*(total_time/increment))){
-					command_time = 4*(total_time/increment);
-					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
-					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-				}else {
-					command_time = 5*(total_time/increment);
-					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
-					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				}
+
+				cout<<"joint velocity max is "<<joint_velocity_limits[dof-1]<<endl;
 				
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
@@ -359,12 +366,12 @@ int main() {
 				if( t > (t_4 + total_time))
 				{	
 					cout << "Done Shooting" << endl;
-					posori_task->reInitializeTask();					
+					//posori_task->reInitializeTask();					
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t);
-					joint_task->reInitializeTask();
-					joint_task->_kp = 0;
+					//joint_task->reInitializeTask();
+					joint_task->_kp = 250;
 					state = POSORI_CONTROLLER;
 				}
 			}
@@ -373,10 +380,11 @@ int main() {
 
 			safetyChecks(robot->_q,robot->_dq,command_torques, dof);
 
-			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
+			// redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 
 			controller_counter++;
 		}
+		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 	}
 
 	command_torques.setZero();
@@ -420,7 +428,7 @@ Vector3d calculatePointInTrajectory(double t)
 	// diameter of board is 20.125 in, convert to m:
 	double r=20.125/2*0.0254; 
 	
-	double x_offset = 0.7; //need to calibrate
+	double x_offset = 0.75; //need to calibrate
 	double y_offset = 0; //need to calibrate
 	Vector3d xh; xh << 0.32,0.35,0.7;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
@@ -465,6 +473,7 @@ Vector3d calculatePointInTrajectory(double t)
 	else
 	{
 		x = xh;
+		cout<<"going home"<<endl;
 	}
 
 	return x;
@@ -552,10 +561,10 @@ void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof)
 {
 	for(int i = 0; i < dof; i++)
 	{
-		if(q[i]>joint_position_max[i]) cout << "------!! VIOLATED MAX JOINT POSITION SOFT LIMIT !!-------" << endl; 
-		if(q[i]<joint_position_min[i]) cout << "------!! VIOLATED MIN JOINT POSITION SOFT LIMIT !!-------" << endl; 
-		if(abs(dq[i])>joint_velocity_limits[i]) cout << "------!! VIOLATED MAX JOINT VELOCITY SOFT LIMIT !!-------" << endl; 
-		if(abs(tau[i])>joint_torques_limits[i]) cout << "------!! VIOLATED MAX JOINT TORQUE SOFT LIMIT !!-------" << endl; 
+		if(q[i]>joint_position_max[i]) cout << "------!! VIOLATED MAX JOINT POSITION SOFT LIMIT !!------- for joint " <<i+1<< endl; 
+		if(q[i]<joint_position_min[i]) cout << "------!! VIOLATED MIN JOINT POSITION SOFT LIMIT !!------- for joint" <<i+1<< endl; 
+		if(abs(dq[i])>joint_velocity_limits[i]) cout << "------!! VIOLATED MAX JOINT VELOCITY SOFT LIMIT !!------- for joint" <<i+1<< endl; 
+		if(abs(tau[i])>joint_torques_limits[i]) cout << "------!! VIOLATED MAX JOINT TORQUE SOFT LIMIT !!------- for joint" <<i+1<<endl; 
 
 	}
 }

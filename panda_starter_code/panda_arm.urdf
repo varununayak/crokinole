@@ -13,7 +13,7 @@
         </geometry>
       </visual>
       <visual>
-          <origin xyz="0.6 0 0.3-0.0122" rpy="-1.571 0 -1.571" />
+          <origin xyz="0.7 0 0.3-0.0122" rpy="-1.571 0 -1.571" />
         <geometry>
           <mesh filename="../../../Model/meshes/crokiboard.obj"/>
         </geometry>
