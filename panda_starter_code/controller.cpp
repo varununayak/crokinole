@@ -266,18 +266,18 @@ int main() {
 			if(state == JOINT_CONTROLLER)
 			{
 				// update task model and set hierarchy
-				joint_task->_desired_position = safe_joint_positions;
+				joint_task->_desired_position = q_init_desired;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0;
-				cout << "HERERERERERER" << endl;
+				//cout << "HERERERERERER" << endl;
 
 				// compute torques
 				joint_task->computeTorques(joint_task_torques);
 				
 				command_torques = joint_task_torques;
 
-				if( (robot->_q - safe_joint_positions).norm() < 0.15 )
+				if( (robot->_q - q_init_desired).norm() < 0.15 )
 				{	
 					cout << "Reached JOINT Goal" << endl;
 					posori_task->reInitializeTask();	
@@ -305,7 +305,7 @@ int main() {
 					state = JOINT_CONTROLLER;
 					joint_task->_desired_position = q_init_desired;
 				}else{
-					//joint_task->_desired_position = safe_joint_positions;
+					joint_task->_desired_position = safe_joint_positions;
 				}
 				
 				if( t > t_3 && t < t_3+total_time)
@@ -320,7 +320,7 @@ int main() {
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
 
-				cout<<"t is "<<t<<endl;
+				//cout<<"t is "<<t<<endl;
 				posori_task->_desired_position = calculatePointInTrajectory(t);
 				posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 				//printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
@@ -338,9 +338,9 @@ int main() {
 				double increment = 3.0;
 				double command_time = 0.0;
 
-				cout<<"joint position max is "<<joint_position_max[dof-1];
-				cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
-				cout<<"joint position min is "<<joint_position_min[dof-1];
+				//cout<<"joint position max is "<<joint_position_max[dof-1];
+				//cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
+				//cout<<"joint position min is "<<joint_position_min[dof-1];
 
 				if(t>t_3 && t<t_4){
 					joint_task->_desired_position(dof-1) = start_angle;
@@ -348,28 +348,28 @@ int main() {
 					command_time = total_time/increment;
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					//cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					//cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					//cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				//joint_task->_desired_position(dof-1) = M_PI;
 				cout<<"t is "<<t<<endl;
 				} else if((t-t_4) <= (2*(total_time/increment))){
 					command_time = 2*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					//cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					//cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					//cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				} else if((t-t_4) <= (3*(total_time/increment))){
 					command_time = 3*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = 0.0;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					//cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					//cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					//cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				}
 
-				cout<<"joint velocity max is "<<joint_velocity_limits[dof-1]<<endl;
+				//cout<<"joint velocity max is "<<joint_velocity_limits[dof-1]<<endl;
 				
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
@@ -508,9 +508,9 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 	Matrix3d rot;
 	Matrix3d home_orientation;
 
-	home_orientation <<0.7377, 0.6737, 0.0442,
-	 				  -0.0257,-0.0375, 0.9990,
-	 				   0.6747,-0.7381,-0.0104;
+	home_orientation << 0.7376512,  0.6737313,  0.0442358,
+  					-0.0256240, -0.0375350,  0.9989668,
+   					0.6746956, -0.7380225, -0.0104240;
 
 	if(inRange(t,t_0,t_1)) 
 	{
@@ -519,8 +519,8 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 	 else if(inRange(t,t_1,t_2)) 
 	 {
 	 	//rotate -90 degrees to gather the coin
-	 	rot =  AngleAxisd(-M_PI/2, Vector3d::UnitZ()).toRotationMatrix() *home_orientation;
-	 	cout << rot << endl;
+	 	rot =  AngleAxisd(-M_PI/4, Vector3d::UnitZ()).toRotationMatrix() *home_orientation;
+	 	//cout << rot << endl;
 		
 	 }
 	 else if (inRange(t,t_2,t_3)) 
