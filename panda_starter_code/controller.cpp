@@ -132,11 +132,11 @@ int main() {
 	const Vector3d control_point = Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.1070+0.0625);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
-#ifdef USING_OTG
-	posori_task->_use_interpolation_flag = true;
-#else
+// #ifdef USING_OTG
+// 	posori_task->_use_interpolation_flag = true;
+// #else
 	posori_task->_use_velocity_saturation_flag = true;
-#endif
+// #endif
 	
 	VectorXd posori_task_torques = VectorXd::Zero(dof);
 	posori_task->_kp_pos = 200.0;
@@ -147,11 +147,11 @@ int main() {
 	// joint task
 	auto joint_task = new Sai2Primitives::JointTask(robot);
 
-#ifdef USING_OTG
-	joint_task->_use_interpolation_flag = true;
-#else
+// #ifdef USING_OTG
+// 	joint_task->_use_interpolation_flag = true;
+// #else
 	joint_task->_use_velocity_saturation_flag = true;
-#endif
+// #endif
 
 	VectorXd joint_task_torques = VectorXd::Zero(dof);
 	joint_task->_kp = 250.0;
@@ -312,6 +312,7 @@ int main() {
 				{
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
+					joint_task->_use_velocity_saturation_flag = false;
 				}
 
 				// update task model and set hierarchy
@@ -392,6 +393,7 @@ int main() {
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					//joint_task->reInitializeTask();
 					joint_task->_kp = 250;
+					joint_task->_use_velocity_saturation_flag = true;
 					state = POSORI_CONTROLLER;
 				}
 			}

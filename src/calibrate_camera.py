@@ -83,7 +83,7 @@ theta = 0
 #---------------------------------#
 
 
-def isWhite(img,i):
+def isWhite(cimg,img,i):
 	avg = 0;
 	x = int(i[0])
 	y = int(i[1])
@@ -95,7 +95,7 @@ def isWhite(img,i):
 	return True
 
 
-def isBlack(img,i):
+def isBlack(cimg,img,i):
 	avg = 0;
 	x = int(i[0])
 	y = int(i[1])
