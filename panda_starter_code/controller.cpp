@@ -125,7 +125,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(0.111,0.0064,0.0625);
+	const Vector3d control_point = Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.0625);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 #ifdef USING_OTG
@@ -157,6 +157,9 @@ int main() {
 	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	q_init_desired *= M_PI/180.0;
 	joint_task->_desired_position = q_init_desired;
+
+	VectorXd safe_joint_positions = initial_q;
+	safe_joint_positions << 0.0, 0.0, 0.0, -1.6, 0.0, 1.9, 0.0;
 
 	// create a timer
 	LoopTimer timer;
@@ -291,7 +294,10 @@ int main() {
 					redis_client.set(MODE_CHANGE_KEY,"wait");
 					state = JOINT_CONTROLLER;
 					joint_task->_desired_position = q_init_desired;
+				}else{
+					joint_task->_desired_position = safe_joint_positions;
 				}
+				
 				if( t > t_3 && t < t_3+total_time)
 				{
 					cout << "Shooting" << endl;

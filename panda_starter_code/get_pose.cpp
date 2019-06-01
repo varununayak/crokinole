@@ -19,16 +19,19 @@ using namespace std;
 using namespace Eigen;
 
 const string robot_file = "./resources/panda_arm.urdf";
-
-
-// redis keys:
-// - read:
 std::string JOINT_ANGLES_KEY;
 std::string JOINT_VELOCITIES_KEY;
 std::string JOINT_TORQUES_SENSED_KEY;
 
+void safetyChecks(VectorXd q,int dof);
+// redis keys:
+// - read:
 
 
+const std::array<double, 7> joint_position_max = {2.7, 1.6, 2.7, -0.2, 2.7, 3.6, 2.7};
+const std::array<double, 7> joint_position_min = {-2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7};
+const std::array<double, 7> joint_velocity_limits = {2.0, 2.0, 2.0, 2.0, 2.5, 2.5, 2.5};
+const std::array<double, 7> joint_torques_limits = {85, 85, 85, 85, 10, 10, 10};
 
 
 // - model
@@ -70,7 +73,7 @@ jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point =Vector3d(-0.08,-0.064,0.066);
+	const Vector3d control_point =Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.0625);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 	Vector3d x;//quantity to store current task space position
@@ -100,6 +103,7 @@ jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
 
 		cout << "\n\n---------------------\n Position of EE = \n" << x.transpose() << "\n"<< endl;
 		cout << setprecision(2) << fixed << "JOINT ANGLES: \n" << jmin.transpose() << endl << robot->_q.transpose() << endl << jmax.transpose() << endl << "\n";
+		safetyChecks(robot->_q, dof);
 		cout << "\n Rotation Matrix = \n" << R << "\n---------------------\n" << endl;
 
 
@@ -109,4 +113,14 @@ jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
    
 
 	return 0;
+}
+
+void safetyChecks(VectorXd q,int dof)
+{
+	for(int i = 0; i < dof; i++)
+	{
+		if(q[i]>joint_position_max[i]) cout << "------!! VIOLATED MAX JOINT POSITION SOFT LIMIT !!------- for joint " <<i+1<< endl; 
+		if(q[i]<joint_position_min[i]) cout << "------!! VIOLATED MIN JOINT POSITION SOFT LIMIT !!------- for joint" <<i+1<< endl; 
+
+	}
 }
