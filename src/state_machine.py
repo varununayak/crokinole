@@ -16,6 +16,8 @@ from disk import *
 from shot_planner import *
 
 MODE_CHANGE_KEY = "modechange"
+SHOT_ANGLE_KEY = "shotangle"
+SHOT_POS_KEY = "shotpos"
 
 
 #states
@@ -39,11 +41,13 @@ def transition1():
 		print(coin.origin[0],coin.origin[1],coin.identity)
 
 	#plan the shot and get the shot parameters
-	plan_shot(coins)
+	shot = plan_shot(coins)
 	
 	#pass the shot parameters over redis
+	myserver.set(SHOT_POS_KEY, shot(0))
+	myserver.set(SHOT_ANGLE_KEY, shot(1))
+
 	#pass key over redis to make controller change state from waiting to executing
-	
 	myserver.set(MODE_CHANGE_KEY,"execute")
 	pass
 

@@ -60,6 +60,9 @@ std::string ROBOT_GRAVITY_KEY;
 //state
 std::string MODE_CHANGE_KEY = "modechange";
 
+std::string SHOT_ANGLE_KEY = "shotangle"
+std::string SHOT_POS_KEY = "shotpos"
+
 //soft safety values
 const std::array<double, 7> joint_position_max = {2.7, 1.6, 2.7, -0.2, 2.7, 3.6, 2.7};
 const std::array<double, 7> joint_position_min = {-2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7};
@@ -173,23 +176,9 @@ int main() {
 	Vector3d omega;
 	Vector3d alpha;
 
-	//retrieve hit velocity through redis
 	double hit_velocity; double start_angle_deg; double start_angle; double end_angle; double swing_angle;
-	swing_angle = 120*M_PI/180.0;
-	cout << "set hit velocity to: "<<endl;
-	cin>>hit_velocity;
-	cout<<"start angle in deg is "<< endl;
-	cin>>start_angle_deg;
-	start_angle = start_angle_deg * M_PI/180.0;
-	cout << start_angle << endl;
-	end_angle = start_angle + swing_angle;
-
 	double total_time = 0;
-	total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
-	cout<<"total_time is "<<total_time<<endl;
-
 	double shot_angular_velocity = 0;
-	shot_angular_velocity = swing_angle/total_time;
 
 
 	while (runloop) {
@@ -215,7 +204,7 @@ int main() {
 		// cout<<"joint position max is "<<joint_position_max[1]<<", "<<joint_position_max[4]<<", "<<joint_position_max[5]<<", "<<endl;
 		// cout<<"robot joint positions: "<<robot->_q(1)<<", "<<robot->_q(4)<<", "<<robot->_q(5)<<", "<<endl;
 		// cout<<"joint position min is "<<joint_position_min[1]<<", "<<joint_position_min[4]<<", "<<joint_position_min[5]<<", "<<endl;
-		
+
 		if(mode == WAIT_MODE)
 		{	
 			cout<<"in wait mode"<<endl;
@@ -229,6 +218,21 @@ int main() {
 			{	
 				mode = EXECUTE_MODE;
 				printf("Going into EXECUTE_MODE\n");
+
+					//retrieve hit velocity through redis
+					swing_angle = 120*M_PI/180.0;
+					cout << "set hit velocity to: "<<endl;
+					cin >> hit_velocity;
+					// cout<<"start angle in deg is "<< endl;
+					// cin >> start_angle_deg;
+					start_angle = stod(redis_client.get(SHOT_ANGLE_KEY));
+					cout << start_angle << endl;
+					end_angle = start_angle + swing_angle;
+
+					total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
+					cout<<"total_time is "<<total_time<<endl;
+
+					shot_angular_velocity = swing_angle/total_time;
 			}
 
 		}
@@ -327,7 +331,7 @@ int main() {
 
 				if(t>t_3 && t<t_4){
 					joint_task->_desired_position(dof-1) = start_angle;
-				}else if((t-t_4) <= total_time/increment){
+				} else if((t-t_4) <= total_time/increment){
 					command_time = total_time/increment;
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;

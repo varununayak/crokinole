@@ -6,17 +6,18 @@ class Disk:
     #identifiers
     ROBOT = 1 #black
     HUMAN = 2 #white
-    CUE = 3 #white and in a certain position (predetermined)
+    CUE = 3 #black and in a certain position (predetermined)
 
     def __init__(self, x_pos = 0.0, y_pos = 0.0, identity = 2):
         self.origin = np.array([x_pos, y_pos])
         self.r = 15.5 # mm
         self.direction = np.array([0, 0])
         self.identity = identity
-        if identity == 1:
-            self.color = 'k'
-        else:
+        if identity == 2:
             self.color = 'r'
+        else:
+            self.color = 'k'
+        self.speed = 0
 
     def __eq__(self, other):
         return np.array_equal(self.origin, other.origin)
