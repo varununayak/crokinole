@@ -457,7 +457,7 @@ Vector3d calculatePointInTrajectory(double t)
 	if(inRange(t,t_0,t_1))
 	{
 		//home position to cue coin position
-		x =  xh + (xc  -  xh )*(t-0)/(5);
+		x =  xh + (xc  -  xh )*(t-t_0)/(t_1-t_0);
 	}
 	else if (inRange(t,t_1,t_2))
 	{
@@ -514,7 +514,7 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 
 	if(inRange(t,t_0,t_1)) 
 	{
-	 rot =home_orientation;
+	 rot = AngleAxisd(-M_PI/4*(t-t_0)/(t_1-t_0), Vector3d::UnitZ()).toRotationMatrix()*home_orientation;
 	 }
 	 else if(inRange(t,t_1,t_2)) 
 	 {
