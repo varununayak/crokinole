@@ -234,12 +234,13 @@ int main() {
 					start_angle = start_angle_deg * M_PI/180.0;
 					//psi = stod(redis_client.get(SHOT_ANGLE_KEY));
 					cout << start_angle << endl;
-					end_angle = start_angle + swing_angle;
+					end_angle = start_angle - swing_angle;
 
 					total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
 					cout<<"total_time is "<<total_time<<endl;
 
-					shot_angular_velocity = swing_angle/total_time;
+					shot_angular_velocity = -swing_angle/total_time;
+					cout<<"shot angular velocity is "<<shot_angular_velocity<<endl;
 			}
 
 		}
@@ -337,6 +338,7 @@ int main() {
 				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
 				double increment = 3.0;
 				double command_time = 0.0;
+				joint_task->_kp = 250.0;
 
 				//cout<<"joint position max is "<<joint_position_max[dof-1];
 				//cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
@@ -348,25 +350,27 @@ int main() {
 					command_time = total_time/increment;
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					//cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					//cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					//cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				//joint_task->_desired_position(dof-1) = M_PI;
-				cout<<"t is "<<t<<endl;
+				cout<<"t for segment 1 is "<<t<<endl;
 				} else if((t-t_4) <= (2*(total_time/increment))){
 					command_time = 2*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					//cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					//cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					//cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					cout<<"t for segment 2 is "<<t<<endl;
 				} else if((t-t_4) <= (3*(total_time/increment))){
 					command_time = 3*(total_time/increment);
 					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
 					joint_task->_desired_velocity(dof-1) = 0.0;
-					//cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					//cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					//cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					cout<<"t for segment 3 is "<<t<<endl;
 				}
 
 				//cout<<"joint velocity max is "<<joint_velocity_limits[dof-1]<<endl;
@@ -561,7 +565,7 @@ double flick_time(double start_angle, double end_angle, double hit_velocity, dou
 double flick(double t, double time, double start_angle, double end_angle){
 	double desired_q; double angle_range; 
 	angle_range = abs(end_angle - start_angle);
-	desired_q = angle_range * t/time + start_angle;
+	desired_q = -angle_range * t/time + start_angle;
 	return desired_q;
 }
 
