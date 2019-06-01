@@ -281,16 +281,15 @@ int main() {
 				if( (robot->_q - q_init_desired).norm() < 0.15 )
 				{	
 					cout << "Reached JOINT Goal" << endl;
-					posori_task->reInitializeTask();	
-					t = 0;				
+					t = 0;	
+					controller_counter = 0;			
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
-					joint_task->reInitializeTask();
-					joint_task->_kp = 0;
+					joint_task->_kp = 150;
 
 					state = POSORI_CONTROLLER;
-					controller_counter = 0;
+					
 				}
 			}
 
@@ -400,8 +399,6 @@ int main() {
 			// send to redis
 
 			safetyChecks(robot->_q,robot->_dq,command_torques, dof);
-
-			// redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 
 			controller_counter++;
 		}
