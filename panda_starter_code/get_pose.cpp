@@ -73,7 +73,7 @@ jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point =Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.0625);
+	const Vector3d control_point =Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.1070+0.0625);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 	Vector3d x;//quantity to store current task space position
@@ -101,10 +101,10 @@ jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
 		robot->linearVelocity(xdot,control_link,control_point); //velocity of end effector 
 		robot->rotation(R,control_link);
 
-		cout << "\n\n---------------------\n Position of EE = \n" << x.transpose() << "\n"<< endl;
+		cout << setprecision(4) << fixed << "\n\n---------------------\n Position of EE = \n" << x.transpose() << "\n"<< endl;
 		cout << setprecision(2) << fixed << "JOINT ANGLES: \n" << jmin.transpose() << endl << robot->_q.transpose() << endl << jmax.transpose() << endl << "\n";
 		safetyChecks(robot->_q, dof);
-		cout << "\n Rotation Matrix = \n" << R << "\n---------------------\n" << endl;
+		cout << setprecision(4) << fixed << "\n Rotation Matrix = \n" << R << "\n---------------------\n" << endl;
 
 
 	}

@@ -38,7 +38,7 @@ int state = JOINT_CONTROLLER;
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha);
 Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
-Matrix3d calculateRotationInTrajectory(double t);
+Matrix3d calculateRotationInTrajectory(double t, double psi);
 double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length);
 double flick(double t, double time, double start_angle, double end_angle);
 void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
@@ -60,8 +60,8 @@ std::string ROBOT_GRAVITY_KEY;
 //state
 std::string MODE_CHANGE_KEY = "modechange";
 
-std::string SHOT_ANGLE_KEY = "shotangle"
-std::string SHOT_POS_KEY = "shotpos"
+std::string SHOT_ANGLE_KEY = "shotangle";
+std::string SHOT_POS_KEY = "shotpos";
 
 //soft safety values
 const std::array<double, 7> joint_position_max = {2.7, 1.6, 2.7, -0.2, 2.7, 3.6, 2.7};
@@ -77,8 +77,9 @@ double t_0 = 0;
 double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
-double t_4 = 22;
-const double ee_length = 4.5*0.0254; //4.5 inches
+double t_4 = 20;
+const double ee_length = 0.111; 
+
 
 
 // const bool flag_simulation = false;
@@ -128,7 +129,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.0625);
+	const Vector3d control_point = Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.1070+0.0625);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 #ifdef USING_OTG
@@ -157,8 +158,9 @@ int main() {
 	joint_task->_kv = 15.0;
 
 	VectorXd q_init_desired = initial_q;
-	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
-	q_init_desired *= M_PI/180.0;
+	//q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	//q_init_desired *= M_PI/180.0;
+	q_init_desired << -0.33, -0.92, 0.57, -2.68, 2.04, 1.56, -1.03;
 	joint_task->_desired_position = q_init_desired;
 
 	VectorXd safe_joint_positions = initial_q;
@@ -179,6 +181,7 @@ int main() {
 	Vector3d omega;
 	Vector3d alpha;
 
+	double psi =135*M_PI/180.0; //shot angle;
 	double hit_velocity; double start_angle_deg; double start_angle; double end_angle; double swing_angle;
 	double total_time = 0;
 	double shot_angular_velocity = 0;
@@ -210,7 +213,7 @@ int main() {
 
 		if(mode == WAIT_MODE)
 		{	
-			cout<<"in wait mode"<<endl;
+			//cout<<"in wait mode"<<endl;
 			joint_task->reInitializeTask();
 			N_prec.setIdentity();
 			joint_task->updateTaskModel(N_prec);
@@ -226,9 +229,10 @@ int main() {
 					swing_angle = 120*M_PI/180.0;
 					cout << "set hit velocity to: "<<endl;
 					cin >> hit_velocity;
-					// cout<<"start angle in deg is "<< endl;
-					// cin >> start_angle_deg;
-					start_angle = stod(redis_client.get(SHOT_ANGLE_KEY));
+					cout<<"start angle in deg is "<< endl;
+					cin >> start_angle_deg;
+					start_angle = start_angle_deg * M_PI/180.0;
+					//psi = stod(redis_client.get(SHOT_ANGLE_KEY));
 					cout << start_angle << endl;
 					end_angle = start_angle + swing_angle;
 
@@ -262,23 +266,25 @@ int main() {
 			if(state == JOINT_CONTROLLER)
 			{
 				// update task model and set hierarchy
-				joint_task->_desired_position = q_init_desired;
+				joint_task->_desired_position = safe_joint_positions;
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0;
+				cout << "HERERERERERER" << endl;
 
 				// compute torques
 				joint_task->computeTorques(joint_task_torques);
 				
 				command_torques = joint_task_torques;
 
-				if( (robot->_q - q_init_desired).norm() < 0.15 )
+				if( (robot->_q - safe_joint_positions).norm() < 0.15 )
 				{	
 					cout << "Reached JOINT Goal" << endl;
-					posori_task->reInitializeTask();					
+					posori_task->reInitializeTask();	
+					t = 0;				
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
-					posori_task->_desired_orientation = calculateRotationInTrajectory(t);
+					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					joint_task->reInitializeTask();
 					joint_task->_kp = 0;
 
@@ -299,7 +305,7 @@ int main() {
 					state = JOINT_CONTROLLER;
 					joint_task->_desired_position = q_init_desired;
 				}else{
-					joint_task->_desired_position = safe_joint_positions;
+					//joint_task->_desired_position = safe_joint_positions;
 				}
 				
 				if( t > t_3 && t < t_3+total_time)
@@ -314,8 +320,9 @@ int main() {
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
 
+				cout<<"t is "<<t<<endl;
 				posori_task->_desired_position = calculatePointInTrajectory(t);
-				posori_task->_desired_orientation = calculateRotationInTrajectory(t);
+				posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 				//printf("%f, %f, %f\n",posori_task->_desired_position(0),posori_task->_desired_position(1),posori_task->_desired_position(2));
 
 				// compute torques
@@ -379,7 +386,7 @@ int main() {
 					//posori_task->reInitializeTask();					
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
-					posori_task->_desired_orientation = calculateRotationInTrajectory(t);
+					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					//joint_task->reInitializeTask();
 					joint_task->_kp = 250;
 					state = POSORI_CONTROLLER;
@@ -438,12 +445,12 @@ Vector3d calculatePointInTrajectory(double t)
 	// diameter of board is 20.125 in, convert to m:
 	double r=20.125/2*0.0254; 
 	
-	double x_offset = 0.75; //need to calibrate
-	double y_offset = 0; //need to calibrate
-	Vector3d xh; xh << 0.32,0.35,0.7;	//calibrate this
+	double x_offset = 0.7385; //need to calibrate
+	double y_offset = 0.1070; //need to calibrate
+	Vector3d xh; xh << 0.3059,0.2787,0.4284;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
-	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.5;	//calibrate this
-	Vector3d xcd; xcd << r*sin(-3*M_PI/4)+x_offset, r*cos(-3*M_PI/4)+y_offset, 0.5; //calculate this - get from redis
+	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.3037;	//calibrate this
+	Vector3d xcd; xcd << r*sin(-3*M_PI/4)+x_offset, r*cos(-3*M_PI/4)+y_offset, 0.3037; //calculate this - get from redis
 
 	Vector3d x; 
 
@@ -483,7 +490,7 @@ Vector3d calculatePointInTrajectory(double t)
 	else
 	{
 		x = xh;
-		cout<<"going home"<<endl;
+		//cout<<"going home"<<endl;
 	}
 
 	return x;
@@ -496,14 +503,14 @@ From calibration and shot planner, we need:
 2) Angle to which to turn to once we reach the cue coin position (get from shot planner over redis)
 3) Angle to which to point to for the backup and shot (get from shot planner over redis)
 */
-Matrix3d calculateRotationInTrajectory(double t)
+Matrix3d calculateRotationInTrajectory(double t, double psi)
 {
 	Matrix3d rot;
 	Matrix3d home_orientation;
 
-	home_orientation <<1,0,0,
-	 				0,0,-1,
-	 				0,1,0;
+	home_orientation <<0.7377, 0.6737, 0.0442,
+	 				  -0.0257,-0.0375, 0.9990,
+	 				   0.6747,-0.7381,-0.0104;
 
 	if(inRange(t,t_0,t_1)) 
 	{
@@ -518,7 +525,7 @@ Matrix3d calculateRotationInTrajectory(double t)
 	 }
 	 else if (inRange(t,t_2,t_3)) 
 	 {
-	 	double psi; psi = 135*M_PI/180.0; //get psi from redis
+	 	//double psi; psi = 135*M_PI/180.0; //get psi from redis
 	 	Matrix3d hit_rot;
 	 	hit_rot << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0,
      			 		   sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0,
@@ -528,7 +535,7 @@ Matrix3d calculateRotationInTrajectory(double t)
 	 }
 	 else if(inRange(t,t_3,t_4))
 	 {
-	 	double psi; psi = 135*M_PI/180.0; //get psi from redis
+	 	//double psi; psi = 135*M_PI/180.0; //get psi from redis
 	 	Matrix3d hit_rot;
 	 	hit_rot << cos(- M_PI/2 + psi), -sin(- M_PI/2+ psi), 0,
      			 		   sin(- M_PI/2 + psi), cos(- M_PI/2 +psi), 0,

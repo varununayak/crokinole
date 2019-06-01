@@ -200,7 +200,7 @@ def plan_shot(disks):
     if not possible_paths:
         path = (np.array([0, -STARTING_ARC_R]), 0)
     else:
-        path = possible_paths(randint(0, len(possible_paths-1)))
+        path = possible_paths[randint(0, len(possible_paths)-1)]
     return path
 
 
