@@ -234,7 +234,7 @@ int main() {
 					start_angle = start_angle_deg * M_PI/180.0;
 					//psi = stod(redis_client.get(SHOT_ANGLE_KEY));
 					cout << start_angle << endl;
-					end_angle = start_angle - swing_angle;
+					end_angle = start_angle + swing_angle;
 
 					total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
 					cout<<"total_time is "<<total_time<<endl;
