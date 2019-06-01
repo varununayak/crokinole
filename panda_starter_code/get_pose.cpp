@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <string>
+#include <array>
 
 #include <signal.h>
 bool runloop = true;
