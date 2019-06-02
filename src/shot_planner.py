@@ -17,6 +17,7 @@ from random import randint
 BOARD_R = 276.225
 STARTING_ARC_R = 255.5875
 ANGLE_EPSILON = 0.01
+MIN_PSI = 0.78 # 45 deg
 
 '''
     rotation about z axis
@@ -90,7 +91,7 @@ def is_viable_path(cue, target, obstacles, plot=False):
 
     # plot 
     if plot is True:
-        print "plotting"
+        # print "plotting"
         ax.add_artist(plt.Circle(cue_cp.origin, cue_cp.r, color=cue_cp.color, linestyle='--', fill=False))
         plt.quiver(cue_cp.origin[0], cue_cp.origin[1], cue_cp.direction[0], cue_cp.direction[1], width=0.005, zorder=10)
         plt.quiver(target_cp.origin[0], target_cp.origin[1], target_cp.direction[0], target_cp.direction[1], width=0.005, zorder=10)
@@ -180,16 +181,16 @@ def plan_shot(disks):
 
                 if is_viable:
                     angle = np.arctan2(cue_disk.direction[1], cue_disk.direction[0])
-                    possible_paths.append((start_pos, angle))
+                    if angle >= MIN_PSI and angle <= (np.pi - MIN_PSI):
+                        possible_paths.append((start_pos, angle))
 
-                    # ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
-                    # plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
+                        # ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
+                        # plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
 
                 cue_disk.direction = rotate(cue_disk.direction, ANGLE_EPSILON)
                 is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
 
             cue_disk.direction = rotate(u/np.linalg.norm(u), -ANGLE_EPSILON)
-
             is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
             while error_code != 1:
 
@@ -199,13 +200,14 @@ def plan_shot(disks):
 
                 if is_viable:
                     angle = np.arctan2(cue_disk.direction[1], cue_disk.direction[0])
-                    possible_paths.append((start_pos, angle))
-                    
-                    # ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
-                    # plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
+                    if angle >= MIN_PSI and angle <= (np.pi - MIN_PSI):
+                        possible_paths.append((start_pos, angle))
+                        
+                        # ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
+                        # plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
 
                 cue_disk.direction = rotate(cue_disk.direction, -ANGLE_EPSILON)
-                is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
+                is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles,)
                 
     print "number of possible paths:", len(possible_paths)
     # print possible_start_pos
