@@ -39,8 +39,14 @@ bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xdd
 Vector3d calculatePointInTrajectory(double t);
 bool inRange(double t, double lower, double upper);
 Matrix3d calculateRotationInTrajectory(double t, double psi);
-double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length);
-double flick(double t, double time, double start_angle, double end_angle);
+
+//calculates time it takes to swing
+double flick_time(double swing_angle, double hit_velocity, double ee_length);
+double sinusoidal_trajectory(double angular_velocity, double t, double theta_mid, double swing_angle);
+double sinusoidal_velocity(double angular_velocity, double t, double theta_mid, double swing_angle);
+
+
+//double flick(double t, double time, double start_angle, double end_angle);
 void safetyChecks(VectorXd q,VectorXd dq,VectorXd tau, int dof);
 
 
@@ -78,12 +84,13 @@ double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
 double t_4 = 20;
-const double ee_length = 0.111; 
+const double ee_length = 0.111;
+const double theta_mid = -1.03-0.5;
 
 
 
-// const bool flag_simulation = false;
-const bool flag_simulation = true;
+const bool flag_simulation = false;
+// const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
@@ -133,7 +140,7 @@ int main() {
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 // #ifdef USING_OTG
-// 	posori_task->_use_interpolation_flag = true;
+	// posori_task->_use_interpolation_flag = true;
 // #else
 	posori_task->_use_velocity_saturation_flag = true;
 // #endif
@@ -141,8 +148,8 @@ int main() {
 	VectorXd posori_task_torques = VectorXd::Zero(dof);
 	posori_task->_kp_pos = 200.0;
 	posori_task->_kv_pos = 20.0;
-	posori_task->_kp_ori = 200.0;
-	posori_task->_kv_ori = 20.0;
+	posori_task->_kp_ori = 400.0;
+	posori_task->_kv_ori = 25.0;
 
 	// joint task
 	auto joint_task = new Sai2Primitives::JointTask(robot);
@@ -151,6 +158,7 @@ int main() {
 // 	joint_task->_use_interpolation_flag = true;
 // #else
 	joint_task->_use_velocity_saturation_flag = true;
+	joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
 // #endif
 
 	VectorXd joint_task_torques = VectorXd::Zero(dof);
@@ -181,10 +189,13 @@ int main() {
 	Vector3d omega;
 	Vector3d alpha;
 
-	double psi =135*M_PI/180.0; //shot angle;
-	double hit_velocity; double start_angle_deg; double start_angle; double end_angle; double swing_angle;
+	double psi =90*M_PI/180.0; //shot angle;
+	double hit_velocity; double swing_angle;
 	double total_time = 0;
 	double shot_angular_velocity = 0;
+	double a; 
+	double w; 
+	double command_time;
 
 
 	while (runloop) {
@@ -229,18 +240,13 @@ int main() {
 					swing_angle = 120*M_PI/180.0;
 					cout << "set hit velocity to: "<<endl;
 					cin >> hit_velocity;
-					cout<<"start angle in deg is "<< endl;
-					cin >> start_angle_deg;
-					start_angle = start_angle_deg * M_PI/180.0;
-					//psi = stod(redis_client.get(SHOT_ANGLE_KEY));
-					cout << start_angle << endl;
-					end_angle = start_angle + swing_angle;
 
-					total_time = flick_time(start_angle, end_angle, hit_velocity, ee_length);
-					cout<<"total_time is "<<total_time<<endl;
-
-					shot_angular_velocity = -swing_angle/total_time;
+					//angular velocity
+					shot_angular_velocity = hit_velocity/ee_length;
 					cout<<"shot angular velocity is "<<shot_angular_velocity<<endl;
+					a = swing_angle/2.0;
+					w = shot_angular_velocity/a;
+					total_time = M_PI/abs(w)+0.3;
 			}
 
 		}
@@ -257,9 +263,9 @@ int main() {
 				robot->_M = redis_client.getEigenMatrixJSON(MASSMATRIX_KEY);
 				if(inertia_regularization)
 				{
-					robot->_M(4,4) += 0.07;
-					robot->_M(5,5) += 0.07;
-					robot->_M(6,6) += 0.07;
+					// robot->_M(4,4) += 0.07;
+					// robot->_M(5,5) += 0.07;
+					// robot->_M(6,6) += 0.07;
 				}
 				robot->_M_inv = robot->_M.inverse();
 			}
@@ -272,6 +278,11 @@ int main() {
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0;
 				//cout << "HERERERERERER" << endl;
+
+				if(inertia_regularization)
+				{
+					robot->_M += 0.1*MatrixXd::Identity(dof,dof);
+				}
 
 				// compute torques
 				joint_task->computeTorques(joint_task_torques);
@@ -307,19 +318,26 @@ int main() {
 				}else{
 					joint_task->_desired_position = safe_joint_positions;
 				}
+				// cout<<"total time is "<<total_time<<endl;
 				
 				if( t > t_3 && t < t_3+total_time)
 				{
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
-					joint_task->_use_velocity_saturation_flag = false;
+					joint_task->reInitializeTask();
+					
 				}
-
+				joint_task->_use_velocity_saturation_flag = true;
 				// update task model and set hierarchy
 				N_prec.setIdentity();
 				posori_task->updateTaskModel(N_prec);
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
+
+				if(inertia_regularization)
+				{
+					posori_task->_Lambda += 0.1*MatrixXd::Identity(6,6);
+				}
 
 				//cout<<"t is "<<t<<endl;
 				posori_task->_desired_position = calculatePointInTrajectory(t);
@@ -330,54 +348,83 @@ int main() {
 				posori_task->computeTorques(posori_task_torques);
 				joint_task->computeTorques(joint_task_torques);
 
-				command_torques = posori_task_torques + joint_task_torques;
+				command_torques = posori_task_torques+ joint_task_torques;
 			}
 			else if(state == JOINT_CONTROLLER_SHOT)
 			{
-				joint_task->reInitializeTask();
-				joint_task->_desired_position = robot->_q; //second last joint function of time needed here
-				double increment = 3.0;
-				double command_time = 0.0;
+				// cout << "in joint controller" <<endl;
+				// cout<< "t is " << t << endl;
+				
+				//joint_task->_desired_position = robot->_q; //second last joint function of time needed here
+				// double increment = 3.0;
+
 				joint_task->_kp = 250.0;
+
+
 
 				//cout<<"joint position max is "<<joint_position_max[dof-1];
 				//cout<<"robot joint positions: "<<robot->_q(dof-1)<<endl;
 				//cout<<"joint position min is "<<joint_position_min[dof-1];
 
 				if(t>t_3 && t<t_4){
-					joint_task->_desired_position(dof-1) = start_angle;
-				} else if((t-t_4) <= total_time/increment){
-					command_time = total_time/increment;
-					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
-					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
+					// cout<<"swinging back"<<endl;
+					joint_task->_desired_position(dof-1) = theta_mid + swing_angle/2.0;
+					command_time = 0.0;
+				} else if((t-t_4) <= total_time){
+					// cout<<"attempting to shoot"<<endl;
+					joint_task->_use_velocity_saturation_flag = false;
+					joint_task->_desired_position(dof-1) = sinusoidal_trajectory(shot_angular_velocity, command_time/1000.0, theta_mid, swing_angle);
+					joint_task->_desired_velocity(dof-1) = sinusoidal_velocity(shot_angular_velocity, command_time/1000.0, theta_mid, swing_angle);
+					command_time++;
+
 					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					cout<<"joint position is "<<robot->_q(dof-1)<<endl;
 					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
 					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
-				//joint_task->_desired_position(dof-1) = M_PI;
-				cout<<"t for segment 1 is "<<t<<endl;
-				} else if((t-t_4) <= (2*(total_time/increment))){
-					command_time = 2*(total_time/increment);
-					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
-					joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
-					cout<<"t for segment 2 is "<<t<<endl;
-				} else if((t-t_4) <= (3*(total_time/increment))){
-					command_time = 3*(total_time/increment);
-					joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
-					joint_task->_desired_velocity(dof-1) = 0.0;
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
-					cout<<"t for segment 3 is "<<t<<endl;
+					cout<<"command time is "<<command_time<<endl;
 				}
+
+
+
+
+
+
+				// 	command_time = total_time/increment;
+				// 	joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+				// 	joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
+				// 	cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				// 	cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+				// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+				// //joint_task->_desired_position(dof-1) = M_PI;
+				// cout<<"t for segment 1 is "<<t<<endl;
+				// } else if((t-t_4) <= (2*(total_time/increment))){
+				// 	command_time = 2*(total_time/increment);
+				// 	joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+				// 	joint_task->_desired_velocity(dof-1) = shot_angular_velocity;
+				// 	cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				// 	cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+				// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+				// 	cout<<"t for segment 2 is "<<t<<endl;
+				// } else if((t-t_4) <= (3*(total_time/increment))){
+				// 	command_time = 3*(total_time/increment);
+				// 	joint_task->_desired_position(dof-1) = flick(command_time, total_time, start_angle, end_angle);
+				// 	joint_task->_desired_velocity(dof-1) = 0.0;
+				// 	cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+				// 	cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+				// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+				// 	cout<<"t for segment 3 is "<<t<<endl;
+				// }
 
 				//cout<<"joint velocity max is "<<joint_velocity_limits[dof-1]<<endl;
 				
 				N_prec.setIdentity();
 				joint_task->updateTaskModel(N_prec);
 				joint_task->_kp = 250.0; 
+
+				if(inertia_regularization)
+				{
+					robot->_M += 0.1*MatrixXd::Identity(dof,dof);
+				}
 
 				// compute torques
 				joint_task->computeTorques(joint_task_torques);
@@ -386,6 +433,7 @@ int main() {
 
 				if( t > (t_4 + total_time))
 				{	
+					joint_task->_use_velocity_saturation_flag = true;
 					cout << "Done Shooting" << endl;
 					//posori_task->reInitializeTask();					
 					posori_task->_desired_position = calculatePointInTrajectory(t);
@@ -393,7 +441,6 @@ int main() {
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					//joint_task->reInitializeTask();
 					joint_task->_kp = 250;
-					joint_task->_use_velocity_saturation_flag = true;
 					state = POSORI_CONTROLLER;
 				}
 			}
@@ -408,6 +455,7 @@ int main() {
 	}
 
 	command_torques.setZero();
+	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 
 	double end_time = timer.elapsedTime();
     std::cout << "\n";
@@ -450,10 +498,10 @@ Vector3d calculatePointInTrajectory(double t)
 	
 	double x_offset = 0.7385; //need to calibrate
 	double y_offset = 0.1070; //need to calibrate
-	Vector3d xh; xh << 0.3059,0.2787,0.4284;	//calibrate this
+	Vector3d xh; xh << 0.3059,0.2787,0.5084;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
-	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.3037;	//calibrate this
-	Vector3d xcd; xcd << r*sin(-3*M_PI/4)+x_offset, r*cos(-3*M_PI/4)+y_offset, 0.3037; //calculate this - get from redis
+	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.3120;	//calibrate this
+	Vector3d xcd; xcd << r*sin(-2*M_PI/4)+x_offset, r*cos(-2*M_PI/4)+y_offset, 0.3120; //calculate this - get from redis
 
 	Vector3d x; 
 
@@ -554,19 +602,36 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 
 }
 
-double flick_time(double start_angle, double end_angle, double hit_velocity, double ee_length){
+double flick_time(double swing_angle, double hit_velocity, double ee_length){
 	double time; double angle_range; 
-	angle_range = abs(end_angle - start_angle);
+	angle_range = swing_angle;
 	time = angle_range*ee_length/hit_velocity;
 	return time;
 }
-//inputs are in radians, output in radians
-double flick(double t, double time, double start_angle, double end_angle){
-	double desired_q; double angle_range; 
-	angle_range = abs(end_angle - start_angle);
-	desired_q = -angle_range * t/time + start_angle;
-	return desired_q;
+
+double sinusoidal_trajectory(double angular_velocity, double t, double theta_mid, double swing_angle){
+	double pos; double a; double w; 
+	a = swing_angle/2.0;
+	w = angular_velocity/a;
+	pos = -a * sin(w*t - M_PI/2.0) + theta_mid;
+	return pos;
 }
+
+double sinusoidal_velocity(double angular_velocity, double t, double theta_mid, double swing_angle){
+	double vel; double a; double w;
+	a = swing_angle/2.0;
+	w = angular_velocity/a;
+	vel = -a * w * cos(w*t - M_PI/2.0);
+	return vel;
+	}
+
+// //inputs are in radians, output in radians
+// double flick(double t, double time, double start_angle, double end_angle){
+// 	double desired_q; double angle_range; 
+// 	angle_range = abs(end_angle - start_angle);
+// 	desired_q = -angle_range * t/time + start_angle;
+// 	return desired_q;
+// }
 
 
 //return true if t lies in between lower and upper limits
