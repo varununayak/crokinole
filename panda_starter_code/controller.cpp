@@ -87,6 +87,8 @@ double t_4 = 20;
 const double ee_length = 0.253;
 const double theta_mid = -1.03-0.3;
 
+Vector4d cue_start_pos;
+
 
 
 // const bool flag_simulation = false;
@@ -236,17 +238,27 @@ int main() {
 				mode = EXECUTE_MODE;
 				printf("Going into EXECUTE_MODE\n");
 
-					//retrieve hit velocity through redis
-					swing_angle = 120*M_PI/180.0;
-					cout << "set hit velocity to: "<<endl;
-					cin >> hit_velocity;
+				std::string shot_pos = redis_client.get(SHOT_POS_KEY);
+				std::string shot_ang = redis_client.get(SHOT_ANGLE_KEY);
 
-					//angular velocity
-					shot_angular_velocity = hit_velocity/ee_length;
-					cout<<"shot angular velocity is "<<shot_angular_velocity<<endl;
-					a = swing_angle/2.0;
-					w = shot_angular_velocity/a;
-					total_time = M_PI/abs(w)+0.3;
+				int delimiter = shot_pos.find(",");
+				cue_start_pos << 0.001*stod(shot_pos.substr(0, delimiter)), 0.001*stod((shot_pos).substr(delimiter+1, shot_pos.length())), 0, 1;
+				cout << "desired cue pos in board frame: " << cue_start_pos << endl;
+
+				psi = stod(shot_ang);
+				std::cout << "psi: " << psi << endl;
+
+				//retrieve hit velocity through redis
+				swing_angle = 120*M_PI/180.0;
+				cout << "set hit velocity to: "<<endl;
+				cin >> hit_velocity;
+
+				//angular velocity
+				shot_angular_velocity = hit_velocity/ee_length;
+				cout<<"shot angular velocity is "<<shot_angular_velocity<<endl;
+				a = swing_angle/2.0;
+				w = shot_angular_velocity/a;
+				total_time = M_PI/abs(w)+0.3;
 			}
 
 		}
@@ -516,7 +528,17 @@ Vector3d calculatePointInTrajectory(double t)
 	Vector3d xh; xh << 0.3059,0.2787,0.5084;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
 	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, z_offset;	//calibrate this
-	Vector3d xcd; xcd << r*sin(-1.75*M_PI/4)+x_offset, r*cos(-1.75*M_PI/4)+y_offset, z_offset; //calculate this - get from redis
+	// Vector3d xcd; xcd << r*sin(-1.75*M_PI/4)+x_offset, r*cos(-1.75*M_PI/4)+y_offset, z_offset; //calculate this - get from redis
+	MatrixXd T = MatrixXd::Zero(4,4);
+	T << 0, 1, 0, x_offset,
+		-1, 0, 0, y_offset,
+		0, 0, 1, z_offset,
+		0, 0, 0, 1;
+	VectorXd xcd = VectorXd::Zero(3);
+	VectorXd xcd_4d = VectorXd::Zero(4); 
+	xcd_4d = T*cue_start_pos; //calculate this - get from redis
+	xcd = xcd_4d.head(3);
+	// std::cout << "xcd: " << xcd << std::endl;
 
 	Vector3d x; 
 

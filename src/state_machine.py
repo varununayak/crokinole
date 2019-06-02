@@ -41,11 +41,14 @@ def transition1():
 		print(coin.origin[0],coin.origin[1],coin.identity)
 
 	#plan the shot and get the shot parameters
-	# shot = plan_shot(coins)
+	shot = plan_shot(coins)
 	
 	# #pass the shot parameters over redis
-	# myserver.set(SHOT_POS_KEY, shot[0])
-	# myserver.set(SHOT_ANGLE_KEY, shot[1])
+
+	x_pos = str(shot[0][0])
+	y_pos = str(shot[0][1])
+	myserver.set(SHOT_POS_KEY, x_pos + "," + y_pos)
+	myserver.set(SHOT_ANGLE_KEY, str(shot[1]))
 
 	#pass key over redis to make controller change state from waiting to executing
 	myserver.set(MODE_CHANGE_KEY,"execute")
@@ -63,7 +66,7 @@ def transition2():
 def main():
 
 	#initialize the state
-	state = WAIT4KEY
+	state =  WAIT4KEY
 	myserver.set(MODE_CHANGE_KEY,"wait");
 
 	while(True):

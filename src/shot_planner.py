@@ -34,7 +34,7 @@ def rotate(vector, theta):
     does not alter the data in the cue and target Disk objects
 '''
 
-def is_viable_path(cue, target, obstacles):
+def is_viable_path(cue, target, obstacles, plot=False):
     # make a copy so original data is not mutated
     cue_cp = copy.deepcopy(cue)
     cue_cp1 = copy.deepcopy(cue)
@@ -43,7 +43,6 @@ def is_viable_path(cue, target, obstacles):
 
     fig = plt.gcf()
     ax = fig.gca()
-    ax.add_artist(plt.Circle(center_hole.origin, center_hole.r, color=center_hole.color, fill=False))
 
     # check if cue disk collides with target disk
     contactpt = collide(cue_cp, target_cp)
@@ -90,9 +89,11 @@ def is_viable_path(cue, target, obstacles):
                     return False, 5
 
     # plot 
-    ax.add_artist(plt.Circle(cue_cp.origin, cue_cp.r, color=cue_cp.color, linestyle='--', fill=False))
-    plt.quiver(cue_cp.origin[0], cue_cp.origin[1], cue_cp.direction[0], cue_cp.direction[1], width=0.005, zorder=10)
-    plt.quiver(target_cp.origin[0], target_cp.origin[1], target_cp.direction[0], target_cp.direction[1], width=0.005, zorder=10)
+    if plot is True:
+        print "plotting"
+        ax.add_artist(plt.Circle(cue_cp.origin, cue_cp.r, color=cue_cp.color, linestyle='--', fill=False))
+        plt.quiver(cue_cp.origin[0], cue_cp.origin[1], cue_cp.direction[0], cue_cp.direction[1], width=0.005, zorder=10)
+        plt.quiver(target_cp.origin[0], target_cp.origin[1], target_cp.direction[0], target_cp.direction[1], width=0.005, zorder=10)
     return True, 0
 
 ''' 
@@ -103,7 +104,7 @@ def generate_start_pos(radius, n):
     points_along_arc = []
     midpoint = np.array([0, -radius])
     points_along_arc.append(midpoint)
-    unit_angle = (np.pi/4)/int((n-1)/2)
+    unit_angle = (np.pi/6)/int((n-1)/2)
     for i in range(1, 1+int((n-1)/2)):
         points_along_arc.append(rotate(midpoint, i*unit_angle))
         points_along_arc.append(rotate(midpoint, -i*unit_angle))
@@ -132,21 +133,31 @@ def plan_shot(disks):
         # show all existing disks on plot
         ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color, fill=False))
 
+    if not opponent_disks: # aim for center hole
+        default_path = (np.array([0, -STARTING_ARC_R]), 0)
+        print "no opponent disk; aiming for center"
+        return default_path
+
     # add posts as obstacles
     obstacles = disks
     post_position = rotate(np.array([0, -80.9625]), np.pi/8)
     for i in range(8):
         post = Disk(post_position[0], post_position[1], 0)
-        post.r = 3
+        post.r = 4
         obstacles.append(post)
         ax.add_artist(plt.Circle(post.origin, post.r, color=post.color, fill=False))
         post_position = rotate(post_position, np.pi/4)
-    
+
+
     # initialize cue disk position
     cue_disk = Disk(-156, -186, 3)
     starting_positions = generate_start_pos(STARTING_ARC_R, 50)
 
+    ax.add_artist(plt.Circle(np.array([0, 0]), cue_disk.r, color='k', fill=False))
+
+
     possible_paths = []
+    failsafe_path = None
 
     # find possible path for each starting position
     for start_pos in starting_positions:
@@ -162,12 +173,17 @@ def plan_shot(disks):
             is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
             while error_code != 1:
             # while is_viable_path(cue_disk, opponent_disks[i], obstacles):
+                
+                if error_code != 2 and failsafe_path is None: # actually hits target with no obs in between
+                    failsafe_angle = np.arctan2(cue_disk.direction[1], cue_disk.direction[0])
+                    failsafe_path = (start_pos, failsafe_angle)
+
                 if is_viable:
                     angle = np.arctan2(cue_disk.direction[1], cue_disk.direction[0])
                     possible_paths.append((start_pos, angle))
 
-                    ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
-                    plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
+                    # ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
+                    # plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
 
                 cue_disk.direction = rotate(cue_disk.direction, ANGLE_EPSILON)
                 is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
@@ -176,12 +192,17 @@ def plan_shot(disks):
 
             is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
             while error_code != 1:
+
+                if error_code != 2 and failsafe_path is None: # actually hits target with no obs in between
+                    failsafe_angle = np.arctan2(cue_disk.direction[1], cue_disk.direction[0])
+                    failsafe_path = (start_pos, failsafe_angle)
+
                 if is_viable:
                     angle = np.arctan2(cue_disk.direction[1], cue_disk.direction[0])
                     possible_paths.append((start_pos, angle))
                     
-                    ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
-                    plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
+                    # ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color=cue_disk.color, fill=False))
+                    # plt.quiver(cue_disk.origin[0], cue_disk.origin[1], cue_disk.direction[0], cue_disk.direction[1], width=0.005, zorder=10)
 
                 cue_disk.direction = rotate(cue_disk.direction, -ANGLE_EPSILON)
                 is_viable, error_code = is_viable_path(cue_disk, opponent_disks[i], obstacles)
@@ -189,22 +210,40 @@ def plan_shot(disks):
     print "number of possible paths:", len(possible_paths)
     # print possible_start_pos
 
+
+    ''' TODO: choose angle based on some cost function'''
+    if not possible_paths:
+        if failsafe_path is None:
+            print "no failsafe path, aiming for center"
+            path = default_path
+        else:
+            print "sending failsafe path"
+            path = failsafe_path
+        ax.add_artist(plt.Circle(path[0], cue_disk.r, color = cue_disk.color, fill=False))
+        direction = rotate(np.array([150, 0]), path[1])
+        plt.quiver(path[0][0], path[0][1], direction[0], direction[1], units='xy', scale=1, width=3, zorder=10)
+    else:
+        print "sending random viable path"
+        path = possible_paths[randint(0, len(possible_paths)-1)]
+        cue_disk.origin = path[0]
+        ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color = cue_disk.color, fill=False))
+        direction = rotate(np.array([150, 0]), path[1])
+        cue_disk.direction = direction/np.linalg.norm(direction)
+        plt.quiver(cue_disk.origin[0], cue_disk.origin[1], direction[0], direction[1], units='xy', scale=1, width=3, zorder=10)
+        for target in opponent_disks:
+            is_viable_path(cue_disk, target, obstacles, plot=True)
+
+
     # plot circles
     ax.set_xlim(-BOARD_R-50, BOARD_R+50)
     ax.set_ylim(-BOARD_R-50, BOARD_R+50)
     ax.set_aspect('equal')
-    plt.show(fig)
+    plt.show()
 
-    ''' TODO: choose angle based on some cost function'''
-    ''' TODO: if possible paths is empty'''
-    if not possible_paths:
-        path = (np.array([0, -STARTING_ARC_R]), 0)
-    else:
-        path = possible_paths[randint(0, len(possible_paths)-1)]
     return path
 
 
 if __name__ == "__main__":
-    disks = [Disk(50, 230, 2), Disk(-240, -30, 2)]
+    disks = [Disk(80, 0, 2), Disk(0, -80, 1), Disk(75, -55, 1), Disk(-100, -100, 2)]
     path = plan_shot(disks)
-    print path
+    print(path)
