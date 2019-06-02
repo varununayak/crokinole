@@ -84,8 +84,8 @@ double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
 double t_4 = 20;
-const double ee_length = 0.111;
-const double theta_mid = -1.03-0.5;
+const double ee_length = 0.253;
+const double theta_mid = -1.03-0.3;
 
 
 
@@ -105,7 +105,6 @@ int main() {
 	else
 	{
 		JOINT_TORQUES_COMMANDED_KEY = "sai2::FrankaPanda::actuators::fgc";
-
 		JOINT_ANGLES_KEY  = "sai2::FrankaPanda::sensors::q";
 		JOINT_VELOCITIES_KEY = "sai2::FrankaPanda::sensors::dq";
 		JOINT_TORQUES_SENSED_KEY = "sai2::FrankaPanda::sensors::torques";
@@ -136,7 +135,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.1070+0.0625);
+	const Vector3d control_point = Vector3d(-ee_length*sin(M_PI/4.0),ee_length*cos(M_PI/4.0),0.1070+0.0635+0.0065);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 // #ifdef USING_OTG
@@ -158,7 +157,8 @@ int main() {
 // 	joint_task->_use_interpolation_flag = true;
 // #else
 	joint_task->_use_velocity_saturation_flag = true;
-	joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
+	// joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
+	joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,2.5;
 // #endif
 
 	VectorXd joint_task_torques = VectorXd::Zero(dof);
@@ -325,6 +325,7 @@ int main() {
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
 					joint_task->reInitializeTask();
+					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.3;
 					
 				}
 				joint_task->_use_velocity_saturation_flag = true;
@@ -368,20 +369,30 @@ int main() {
 
 				if(t>t_3 && t<t_4){
 					// cout<<"swinging back"<<endl;
-					joint_task->_desired_position(dof-1) = theta_mid + swing_angle/2.0;
+					joint_task->_desired_position(dof-1) = theta_mid + M_PI/7; //+ swing_angle/2.0;
 					command_time = 0.0;
+					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				} else if((t-t_4) <= total_time){
 					// cout<<"attempting to shoot"<<endl;
-					joint_task->_use_velocity_saturation_flag = false;
-					joint_task->_desired_position(dof-1) = sinusoidal_trajectory(shot_angular_velocity, command_time/1000.0, theta_mid, swing_angle);
-					joint_task->_desired_velocity(dof-1) = sinusoidal_velocity(shot_angular_velocity, command_time/1000.0, theta_mid, swing_angle);
+
+					joint_task->_use_velocity_saturation_flag = true;
+					// if((robot->_dq(dof-1))<= -1.9){
+					// 	cout<<"time is "<<t<<endl;
+					// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					// }
+
+					joint_task->_desired_position(dof-1) = theta_mid - M_PI/4;
+					// joint_task->_desired_velocity(dof-1) = -2.4;
+					// joint_task->_desired_position(dof-1) = sinusoidal_trajectory(shot_angular_velocity, (command_time)/1000.0, theta_mid, swing_angle);
+					// joint_task->_desired_velocity(dof-1) = sinusoidal_velocity(shot_angular_velocity, (command_time)/1000.0, theta_mid, swing_angle);
 					command_time++;
 
-					cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
-					cout<<"joint position is "<<robot->_q(dof-1)<<endl;
-					cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
+					// cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
+					// cout<<"joint position is "<<robot->_q(dof-1)<<endl;
+					// cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
 					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
-					cout<<"command time is "<<command_time<<endl;
+					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					// cout<<"command time is "<<command_time<<endl;
 				}
 
 
@@ -431,6 +442,8 @@ int main() {
 				
 				command_torques = joint_task_torques;
 
+				
+
 				if( t > (t_4 + total_time))
 				{	
 					joint_task->_use_velocity_saturation_flag = true;
@@ -441,6 +454,7 @@ int main() {
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					//joint_task->reInitializeTask();
 					joint_task->_kp = 250;
+					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,2.5;
 					state = POSORI_CONTROLLER;
 				}
 			}
@@ -497,11 +511,12 @@ Vector3d calculatePointInTrajectory(double t)
 	double r=20.125/2*0.0254; 
 	
 	double x_offset = 0.7385; //need to calibrate
-	double y_offset = 0.1070; //need to calibrate
+	double y_offset = 0.1070;
+	double z_offset = 0.3120; //need to calibrate
 	Vector3d xh; xh << 0.3059,0.2787,0.5084;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
-	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, 0.3120;	//calibrate this
-	Vector3d xcd; xcd << r*sin(-2*M_PI/4)+x_offset, r*cos(-2*M_PI/4)+y_offset, 0.3120; //calculate this - get from redis
+	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, z_offset;	//calibrate this
+	Vector3d xcd; xcd << r*sin(-1.75*M_PI/4)+x_offset, r*cos(-1.75*M_PI/4)+y_offset, z_offset; //calculate this - get from redis
 
 	Vector3d x; 
 
