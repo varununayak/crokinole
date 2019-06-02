@@ -91,8 +91,8 @@ Vector4d cue_start_pos;
 
 
 
-// const bool flag_simulation = false;
-const bool flag_simulation = true;
+ const bool flag_simulation = false;
+//const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
@@ -159,8 +159,8 @@ int main() {
 // 	joint_task->_use_interpolation_flag = true;
 // #else
 	joint_task->_use_velocity_saturation_flag = true;
-	// joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
-	joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,2.5;
+	joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
+	//joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,2.5;
 // #endif
 
 	VectorXd joint_task_torques = VectorXd::Zero(dof);
@@ -337,7 +337,7 @@ int main() {
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
 					joint_task->reInitializeTask();
-					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.3;
+					//joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.3;
 					
 				}
 				joint_task->_use_velocity_saturation_flag = true;
@@ -381,7 +381,7 @@ int main() {
 
 				if(t>t_3 && t<t_4){
 					// cout<<"swinging back"<<endl;
-					joint_task->_desired_position(dof-1) = theta_mid + M_PI/7; //+ swing_angle/2.0;
+					joint_task->_desired_position(dof-1) = theta_mid + M_PI/10; //+ swing_angle/2.0;
 					command_time = 0.0;
 					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				} else if((t-t_4) <= total_time){
@@ -392,7 +392,7 @@ int main() {
 					// 	cout<<"time is "<<t<<endl;
 					// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 					// }
-
+					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.3;
 					joint_task->_desired_position(dof-1) = theta_mid - M_PI/4;
 					// joint_task->_desired_velocity(dof-1) = -2.4;
 					// joint_task->_desired_position(dof-1) = sinusoidal_trajectory(shot_angular_velocity, (command_time)/1000.0, theta_mid, swing_angle);
@@ -466,7 +466,7 @@ int main() {
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					//joint_task->reInitializeTask();
 					joint_task->_kp = 250;
-					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,2.5;
+					joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
 					state = POSORI_CONTROLLER;
 				}
 			}
@@ -496,7 +496,7 @@ int main() {
 
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha)
 {
-	double epsilon = 0.001;
+	double epsilon = 1;
 	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
 	if(error_norm<epsilon)
 	{	
