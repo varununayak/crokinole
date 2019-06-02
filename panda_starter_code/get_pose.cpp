@@ -40,6 +40,8 @@ std::string MASSMATRIX_KEY;
 std::string CORIOLIS_KEY;
 std::string ROBOT_GRAVITY_KEY;
 
+double ee_length = 0.253;
+
 
 int main() {
 
@@ -74,7 +76,7 @@ jmin << -2.7, -1.6, -2.7, -3.0, -2.7, 0.2, -2.7;
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point =Vector3d(-0.111*sin(M_PI/4.0),0.111*cos(M_PI/4.0),0.1070+0.0625);
+	const Vector3d control_point =Vector3d(-ee_length*sin(M_PI/4.0),ee_length*cos(M_PI/4.0),0.1070+0.0635+0.0065);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 	Vector3d x;//quantity to store current task space position
