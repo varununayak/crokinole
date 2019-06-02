@@ -89,8 +89,8 @@ const double theta_mid = -1.03-0.3;
 
 
 
-const bool flag_simulation = false;
-// const bool flag_simulation = true;
+// const bool flag_simulation = false;
+const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
