@@ -258,7 +258,8 @@ int main() {
 				cout<<"shot angular velocity is "<<shot_angular_velocity<<endl;
 				a = swing_angle/2.0;
 				w = shot_angular_velocity/a;
-				total_time = M_PI/abs(w)+0.3;
+				//total_time = M_PI/abs(w)+0.3;
+				total_time = 3;
 			}
 
 		}
@@ -453,11 +454,12 @@ int main() {
 				joint_task->computeTorques(joint_task_torques);
 				
 				command_torques = joint_task_torques;
-
+				//cout << "Total Time" << total_time << endl;
 				
 
 				if( t > (t_4 + total_time))
-				{	
+				{		
+
 					joint_task->_use_velocity_saturation_flag = true;
 					cout << "Done Shooting" << endl;
 					//posori_task->reInitializeTask();					
