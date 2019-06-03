@@ -170,7 +170,7 @@ int main() {
 	VectorXd q_init_desired = initial_q;
 	//q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	//q_init_desired *= M_PI/180.0;
-	q_init_desired << -0.14, -0.71, 0.23, -2.15, 1.78, 1.71, -0.66;
+	q_init_desired << 0.004, -0.44, 0.315, -1.63, 1.53, 2.15, -0.33;
 	joint_task->_desired_position = q_init_desired;
 
 	VectorXd safe_joint_positions = initial_q;
