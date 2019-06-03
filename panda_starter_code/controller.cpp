@@ -90,9 +90,14 @@ const double theta_mid = -1.03+0.2;
 Vector4d cue_start_pos;
 
 
+<<<<<<< HEAD
 
  const bool flag_simulation = false;
 //const bool flag_simulation = true;
+=======
+//const bool flag_simulation = false;
+const bool flag_simulation = true;
+>>>>>>> 37671e78ed5dfaf7db5783ba59b6f23276cfc089
 
 const bool inertia_regularization = true;
 
@@ -496,7 +501,19 @@ int main() {
 
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha)
 {
+<<<<<<< HEAD
 	double epsilon = 3;
+=======
+	double epsilon;
+	if(flag_simulation)
+	{
+		epsilon = 1;
+	}
+	else
+	{
+		epsilon = 1;
+	}
+>>>>>>> 37671e78ed5dfaf7db5783ba59b6f23276cfc089
 	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
 	if(error_norm<epsilon)
 	{	
