@@ -135,7 +135,7 @@ def plan_shot(disks):
         ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color, fill=False))
 
     if not opponent_disks: # aim for center hole
-        default_path = (np.array([0, -STARTING_ARC_R]), 0)
+        default_path = (np.array([0, -STARTING_ARC_R]), np.pi/2)
         print "no opponent disk; aiming for center"
         return default_path
 
