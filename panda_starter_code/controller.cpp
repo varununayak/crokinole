@@ -84,15 +84,15 @@ double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
 double t_4 = 20;
-const double ee_length = 17.9*0.0254;
-const double theta_mid = -1.03+0.2;
+const double ee_length = 17.75*0.0254;
+double theta_mid = -1.03+0.2;
 
 Vector4d cue_start_pos;
 
 
 
-// const bool flag_simulation = false;
-const bool flag_simulation = true;
+const bool flag_simulation = false;
+//const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
@@ -147,8 +147,8 @@ int main() {
 // #endif
 	
 	VectorXd posori_task_torques = VectorXd::Zero(dof);
-	posori_task->_kp_pos = 200.0;
-	posori_task->_kv_pos = 20.0;
+	posori_task->_kp_pos = 400.0;
+	posori_task->_kv_pos = 25.0;
 	posori_task->_kp_ori = 400.0;
 	posori_task->_kv_ori = 25.0;
 
@@ -283,6 +283,8 @@ int main() {
 				robot->_M_inv = robot->_M.inverse();
 			}
 
+			cout<<"z position is "<<x(2)<<endl;
+
 			if(state == JOINT_CONTROLLER)
 			{
 				// update task model and set hierarchy
@@ -310,7 +312,12 @@ int main() {
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
-					joint_task->_kp = 250;
+					joint_task->_kp = 300.0;
+					joint_task->_kv = 25.0;
+					posori_task->_kp_pos = 400.0;
+					posori_task->_kv_pos = 25.0;
+					posori_task->_kp_ori = 400.0;
+					posori_task->_kv_ori = 25.0;
 
 					state = POSORI_CONTROLLER;
 					
@@ -338,6 +345,7 @@ int main() {
 					cout << "Shooting" << endl;
 					state = JOINT_CONTROLLER_SHOT;
 					joint_task->reInitializeTask();
+					theta_mid = robot->_q(dof-1);
 					//joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.3;
 					
 				}
@@ -347,6 +355,7 @@ int main() {
 				posori_task->updateTaskModel(N_prec);
 				N_prec = posori_task->_N;
 				joint_task->updateTaskModel(N_prec);
+				
 
 				if(inertia_regularization)
 				{
@@ -363,6 +372,7 @@ int main() {
 				joint_task->computeTorques(joint_task_torques);
 
 				command_torques = posori_task_torques+ joint_task_torques;
+				//command_torques = posori_task_torques;
 			}
 			else if(state == JOINT_CONTROLLER_SHOT)
 			{
@@ -381,8 +391,8 @@ int main() {
 				//cout<<"joint position min is "<<joint_position_min[dof-1];
 
 				if(t>t_3 && t<t_4){
-					// cout<<"swinging back"<<endl;
-					joint_task->_desired_position(dof-1) = theta_mid + M_PI/10; //+ swing_angle/2.0;
+					// cout<<"swinging back"<<endl;					
+					joint_task->_desired_position(dof-1) = theta_mid + M_PI/12; //+ swing_angle/2.0;
 					command_time = 0.0;
 					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				} else if((t-t_4) <= total_time){
@@ -393,7 +403,7 @@ int main() {
 					// 	cout<<"time is "<<t<<endl;
 					// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 					// }
-					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.3;
+					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.0;
 					joint_task->_desired_position(dof-1) = theta_mid - M_PI/4;
 					// joint_task->_desired_velocity(dof-1) = -2.4;
 					// joint_task->_desired_position(dof-1) = sinusoidal_trajectory(shot_angular_velocity, (command_time)/1000.0, theta_mid, swing_angle);
@@ -467,8 +477,13 @@ int main() {
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
 					//joint_task->reInitializeTask();
-					joint_task->_kp = 250;
-					joint_task->_saturation_velocity = M_PI/3*VectorXd::Ones(dof);
+					joint_task->_kp = 200.0;
+					joint_task->_kv = 20.0;
+					posori_task->_kp_pos = 200.0;
+					posori_task->_kv_pos = 20.0;
+					posori_task->_kp_ori = 200.0;
+					posori_task->_kv_ori = 20.0;
+					joint_task->_saturation_velocity = M_PI/4*VectorXd::Ones(dof);
 					state = POSORI_CONTROLLER;
 				}
 			}
@@ -598,9 +613,9 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 	Matrix3d rot;
 	Matrix3d home_orientation;
 
-	home_orientation << 0.7362953,  0.6665016,  0.1168115,
-  -0.1250807, -0.0355936,  0.9915079,
-   0.6649993, -0.7446535,  0.0571591;
+	home_orientation <<   0.7360145,  0.6763110,  0.0297644,
+  -0.0413102,  0.0009846,  0.9991459,
+   0.6757041, -0.7366155,  0.0286632;
 
 	if(inRange(t,t_0,t_1)) 
 	{
