@@ -527,7 +527,7 @@ Vector3d calculatePointInTrajectory(double t)
 	double x_offset = 0.7385; //need to calibrate
 	double y_offset = 0.1070;
 	double z_offset = 0.3120; //need to calibrate
-	Vector3d xh; xh << 0.3059,0.2787,0.4800;	//calibrate this
+	Vector3d xh; xh << 0.2859,0.2787,0.4300;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
 	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, z_offset;	//calibrate this
 	// Vector3d xcd; xcd << r*sin(-1.75*M_PI/4)+x_offset, r*cos(-1.75*M_PI/4)+y_offset, z_offset; //calculate this - get from redis
