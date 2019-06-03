@@ -84,8 +84,8 @@ double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
 double t_4 = 20;
-const double ee_length = 0.253;
-const double theta_mid = -1.03-0.3;
+const double ee_length = 17.9*0.0254;
+const double theta_mid = -1.03+0.2;
 
 Vector4d cue_start_pos;
 
@@ -137,7 +137,7 @@ int main() {
 
 	// pose task
 	const string control_link = "link7";
-	const Vector3d control_point = Vector3d(-ee_length*sin(M_PI/4.0),ee_length*cos(M_PI/4.0),0.1070+0.0635+0.0065);
+	const Vector3d control_point = Vector3d((-ee_length+0.0254/2)*sin(M_PI/4.0),(ee_length+0.0254/2)*cos(M_PI/4.0),0.1070+0.0254*1);
 	auto posori_task = new Sai2Primitives::PosOriTask(robot, control_link, control_point);
 
 // #ifdef USING_OTG
@@ -309,7 +309,7 @@ int main() {
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
 					posori_task->_desired_orientation = calculateRotationInTrajectory(t, psi);
-					joint_task->_kp = 150;
+					joint_task->_kp = 250;
 
 					state = POSORI_CONTROLLER;
 					
@@ -371,7 +371,7 @@ int main() {
 				//joint_task->_desired_position = robot->_q; //second last joint function of time needed here
 				// double increment = 3.0;
 
-				joint_task->_kp = 250.0;
+				joint_task->_kp = 400.0;
 
 
 
@@ -496,7 +496,7 @@ int main() {
 
 bool robotReachedGoal(VectorXd x,VectorXd x_desired, VectorXd xdot, VectorXd xddot, VectorXd omega, VectorXd alpha)
 {
-	double epsilon = 1;
+	double epsilon = 3;
 	double error_norm = 100*xdot.norm() + 10*(x-x_desired).norm() + 1000*xddot.norm() + 1000*omega.norm() + 1000*alpha.norm();
 	if(error_norm<epsilon)
 	{	
@@ -525,7 +525,7 @@ Vector3d calculatePointInTrajectory(double t)
 	double x_offset = 0.7385; //need to calibrate
 	double y_offset = 0.1070;
 	double z_offset = 0.3120; //need to calibrate
-	Vector3d xh; xh << 0.3059,0.2787,0.5084;	//calibrate this
+	Vector3d xh; xh << 0.3059,0.2787,0.4800;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;
 	Vector3d xc; xc << r*sin(-M_PI/4)+x_offset, r*cos(-M_PI/4)+y_offset, z_offset;	//calibrate this
 	// Vector3d xcd; xcd << r*sin(-1.75*M_PI/4)+x_offset, r*cos(-1.75*M_PI/4)+y_offset, z_offset; //calculate this - get from redis
@@ -596,9 +596,9 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 	Matrix3d rot;
 	Matrix3d home_orientation;
 
-	home_orientation << 0.7376512,  0.6737313,  0.0442358,
-  					-0.0256240, -0.0375350,  0.9989668,
-   					0.6746956, -0.7380225, -0.0104240;
+	home_orientation << 0.7362953,  0.6665016,  0.1168115,
+  -0.1250807, -0.0355936,  0.9915079,
+   0.6649993, -0.7446535,  0.0571591;
 
 	if(inRange(t,t_0,t_1)) 
 	{
