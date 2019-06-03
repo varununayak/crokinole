@@ -91,8 +91,8 @@ Vector4d cue_start_pos;
 
 
 
- const bool flag_simulation = false;
-//const bool flag_simulation = true;
+// const bool flag_simulation = false;
+const bool flag_simulation = true;
 
 const bool inertia_regularization = true;
 
@@ -250,8 +250,8 @@ int main() {
 
 				//retrieve hit velocity through redis
 				swing_angle = 120*M_PI/180.0;
-				cout << "set hit velocity to: "<<endl;
-				cin >> hit_velocity;
+				// cout << "set hit velocity to: "<<endl;
+				// cin >> hit_velocity;
 
 				//angular velocity
 				shot_angular_velocity = hit_velocity/ee_length;
