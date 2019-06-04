@@ -72,7 +72,8 @@ def inBoundary(X,Y):
 
 def updateBoardCoins():
 	
-	list_of_coins = [] 
+	list_of_coins = []
+	return list_of_coins 
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
 	num_caps = 25

@@ -84,7 +84,7 @@ double t_1 = 5;
 double t_2 = 10;
 double t_3 = 15;
 double t_4 = 20;
-const double ee_length = 17.75*0.0254;
+const double ee_length = 18.2*0.0254;
 double theta_mid = -1.03+0.2;
 
 Vector4d cue_start_pos;
@@ -392,7 +392,7 @@ int main() {
 
 				if(t>t_3 && t<t_4){
 					// cout<<"swinging back"<<endl;					
-					joint_task->_desired_position(dof-1) = theta_mid + M_PI/12; //+ swing_angle/2.0;
+					joint_task->_desired_position(dof-1) = theta_mid + M_PI/15; //+ swing_angle/2.0;
 					command_time = 0.0;
 					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				} else if((t-t_4) <= total_time){
