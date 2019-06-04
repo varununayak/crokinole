@@ -8,31 +8,33 @@ from disk import *
 import numpy as np
 import cv2
 
-
-#-----CALIBRATED VALUES HERE-----#
-
-WHITE_THRESHOLD = 220 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 180
-CSD = 10	
-
 #focal lengths
 focus_x = 986.1724
 focus_y = 994.4793
 
+
+#-----CALIBRATED VALUES HERE-----#
+
+
+WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 150
+CSD = 10	#colour search distance
+
+
 #pixel center offset
-offset_pixel_x = -1.75
-offset_pixel_y = 13
+offset_pixel_x = -15
+offset_pixel_y = -2.25
 
 #Depth in mm, theta in radian
-Depth = 1220*254/np.sqrt(242**2 + 25.5**2)
-theta = -0.102
+Depth = 1220*254/np.sqrt(253.8**2 + 4.66**2)
+theta = -0.0157
 
 #----------------------------------#
 
 CUE_POSITION_X = -156
 CUE_POSITION_Y = -186
 
-BOUNDARY_RADIUS = 260
+BOUNDARY_RADIUS = 270
 
 #----------------------------------#
 

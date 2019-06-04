@@ -59,8 +59,8 @@ G = np.matmul(AI,Tform)
 #-------WHAT ARE YOU CALIBRATING--------#
 
 
-CALIB_DEPTH = False
-CALIB_ANGLE = False
+CALIB_DEPTH = True
+CALIB_ANGLE = True
 
 #-------CALIBRATION VALUES--------#
 
@@ -69,16 +69,16 @@ CALIB_ANGLE = False
 
 WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
 BLACK_THRESHOLD = 150
-CSD = 10	#colour search distance
+CSD = 5	#colour search distance
 
 
 #pixel center offset
-offset_pixel_x = 7.75
-offset_pixel_y = 0.349
+offset_pixel_x = -15
+offset_pixel_y = -2.25
 
 #Depth in mm, theta in radian
-Depth = 1220
-theta = 0
+Depth = 1220*254/np.sqrt(253.8**2 + 4.66**2)
+theta = -0.0157
 
 #---------------------------------#
 
