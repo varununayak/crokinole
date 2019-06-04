@@ -90,6 +90,17 @@ def isWhite(cimg,img,i):
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
 	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
 
+	# frame = img[y-CSD:y+CSD,x-CSD:x+CSD]
+	# hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+	# lower_white = np.array([0,0,150])
+	# upper_white = np.array([0,0,255])
+	# mask = cv2.inRange(hsv, lower_white, upper_white)
+
+	# if np.average(mask)>100:
+	# 	return True
+	# else:
+	# 	return False
+
 	if avg < WHITE_THRESHOLD:
 		return False		
 	return True
@@ -101,6 +112,17 @@ def isBlack(cimg,img,i):
 	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
 	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
+
+	# frame = img[y-CSD:y+CSD,x-CSD:x+CSD]
+	# hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+	# lower_black = np.array([0,0,0])
+	# upper_black = np.array([0,0,100])
+	# mask = cv2.inRange(hsv, lower_black, upper_black)
+
+	# if np.average(mask)>100:
+	# 	return True
+	# else:
+	# 	return False
 
 	if avg > BLACK_THRESHOLD:
 		return False		
@@ -132,12 +154,12 @@ def main():
 		    	for i in circles[0,:]:
 
 
-		    		if isBlack(img,i):#coin is white in colou
+		    		if isBlack(cimg,img,i):#coin is white in colou
 		    			cv2.circle(cimg,(i[0],i[1]),2,(0,255,0),3)	#blue colour center marker for our coin 
 
 		    		# draw the outer circle
 		    		#cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
-		    		if isWhite(img,i):#coin is white in colou
+		    		if isWhite(cimg,img,i):#coin is white in colou
 		    			cv2.circle(cimg,(i[0],i[1]),2,(255,0,0),3)	#blue colour center marker for our coin 
 
 
