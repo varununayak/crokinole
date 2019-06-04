@@ -67,8 +67,8 @@ CALIB_ANGLE = True
 #COPY THESE OVER TO CoinsUpdater.py
 
 
-WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 150
+WHITE_THRESHOLD = 195 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 195
 CSD = 5	#colour search distance
 
 
@@ -133,7 +133,7 @@ def isBlack(cimg,img,i):
 def main():
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
-	cap = cv2.VideoCapture(0)	
+	cap = cv2.VideoCapture(-1)	
 
 
 	while(cap.isOpened()):
