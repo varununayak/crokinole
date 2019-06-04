@@ -9,7 +9,7 @@ Calibrate the depth value and the center of the board
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-
+import time
 
 
 A = np.array( [ [986.1724, 0,0]  ,  [0, 994.4793, 0] ,	[0,0,1] ])
@@ -67,18 +67,18 @@ CALIB_ANGLE = True
 #COPY THESE OVER TO CoinsUpdater.py
 
 
-WHITE_THRESHOLD = 195 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 195
-CSD = 5	#colour search distance
+WHITE_THRESHOLD = 100 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 100
+CSD = 10	#colour search distance
 
 
 #pixel center offset
-offset_pixel_x = -15
-offset_pixel_y = -2.25
+offset_pixel_x = -26.45
+offset_pixel_y = -17.5
 
 #Depth in mm, theta in radian
-Depth = 1220*254/np.sqrt(253.8**2 + 4.66**2)
-theta = -0.0157
+Depth = 1220*254/np.sqrt(254**2+9**2)
+theta = -0.0354
 
 #---------------------------------#
 
@@ -131,10 +131,11 @@ def isBlack(cimg,img,i):
 
 
 def main():
+
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
 	cap = cv2.VideoCapture(-1)	
-
+	time.sleep(2)
 
 	while(cap.isOpened()):
 	    ret, frame = cap.read()

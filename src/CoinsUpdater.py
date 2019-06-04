@@ -16,24 +16,23 @@ focus_y = 994.4793
 
 #-----CALIBRATED VALUES HERE-----#
 
-
-WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 150
-CSD = 10	#colour search distance
+WHITE_THRESHOLD = 100 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 100
+CSD = 5	#colour search distance
 
 
 #pixel center offset
-offset_pixel_x = -15
-offset_pixel_y = -2.25
+offset_pixel_x = -26.45
+offset_pixel_y = -17.5
 
 #Depth in mm, theta in radian
-Depth = 1220*254/np.sqrt(253.8**2 + 4.66**2)
-theta = -0.0157
+Depth = 1220*254/np.sqrt(254**2+9**2)
+theta = -0.0354
 
 #----------------------------------#
 
-CUE_POSITION_X = -156
-CUE_POSITION_Y = -186
+CUE_POSITION_X = -140
+CUE_POSITION_Y = -183
 
 BOUNDARY_RADIUS = 270
 
@@ -47,9 +46,9 @@ def isWhite(img,i):
 	y = int(i[1])
 	#be careful of indexing here, 1 represents x-coordinate, 0 represents y
 	avg = np.average(img[y-CSD:y+CSD,x-CSD:x+CSD])  #compute the average RGB value
-	if avg < WHITE_THRESHOLD:
-		return False		
-	return True
+	if avg > WHITE_THRESHOLD:
+		return True		
+	return False
 
 def isBlack(img,i):
 	avg = 0;
@@ -62,7 +61,7 @@ def isBlack(img,i):
 	return False
 
 def isCue(X,Y):
-	epsilion = 10 #error in mm
+	epsilion = 40 #error in mm
 	if( np.sqrt(  (X-CUE_POSITION_X)**2 + (Y-CUE_POSITION_Y)**2 ) ) < epsilion:
 		return True
 	return False 
@@ -73,12 +72,13 @@ def inBoundary(X,Y):
 def updateBoardCoins():
 	
 	list_of_coins = []
-	return list_of_coins 
+	#return list_of_coins 
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
 	num_caps = 25
 	frames = []
 	cap = cv2.VideoCapture(-1)
+	time.sleep(2)
 
 	for k in range(num_caps):
 	        ret, frame = cap.read()

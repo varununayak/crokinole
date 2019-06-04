@@ -127,7 +127,10 @@ def plan_shot(disks):
 
     # separate out opponent disks
     opponent_disks = [];
+    obstacles = [];
     for disk in disks:
+        if disk.identity != 3:
+            obstacles.append(disk)
         if disk.identity == 2:
             opponent_disks.append(disk) 
 
@@ -140,11 +143,10 @@ def plan_shot(disks):
         return default_path
 
     # add posts as obstacles
-    obstacles = disks
     post_position = rotate(np.array([0, -80.9625]), np.pi/8)
     for i in range(8):
         post = Disk(post_position[0], post_position[1], 0)
-        post.r = 4
+        post.r = 5
         obstacles.append(post)
         ax.add_artist(plt.Circle(post.origin, post.r, color=post.color, fill=False))
         post_position = rotate(post_position, np.pi/4)
