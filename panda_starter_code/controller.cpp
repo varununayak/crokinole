@@ -89,7 +89,7 @@ double theta_mid = -1.03+0.2;
 
 Vector4d cue_start_pos;
 
-
+bool centershot = false;
 
 const bool flag_simulation = false;
 //const bool flag_simulation = true;
@@ -164,8 +164,8 @@ int main() {
 // #endif
 
 	VectorXd joint_task_torques = VectorXd::Zero(dof);
-	joint_task->_kp = 250.0;
-	joint_task->_kv = 15.0;
+	joint_task->_kp = 150.0;
+	joint_task->_kv = 20.0;
 
 	VectorXd q_init_desired = initial_q;
 	//q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
@@ -193,7 +193,7 @@ int main() {
 
 	double psi =90*M_PI/180.0; //shot angle;
 	double hit_velocity; double swing_angle;
-	double total_time = 1;
+	double total_time = 1.3;
 	double shot_angular_velocity = 0;
 	double a; 
 	double w; 
@@ -248,6 +248,10 @@ int main() {
 				psi = stod(shot_ang);
 				std::cout << "psi: " << psi << endl;
 
+				if (psi <= 1.571 && psi >= 1.569) {
+					centershot = true;
+				}
+
 				//retrieve hit velocity through redis
 				swing_angle = 120*M_PI/180.0;
 				// cout << "set hit velocity to: "<<endl;
@@ -283,7 +287,7 @@ int main() {
 				robot->_M_inv = robot->_M.inverse();
 			}
 
-			cout<<"z position is "<<x(2)<<endl;
+			// cout<<"z position is "<<x(2)<<endl;
 
 			if(state == JOINT_CONTROLLER)
 			{
@@ -403,7 +407,13 @@ int main() {
 					// 	cout<<"time is "<<t<<endl;
 					// 	cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 					// }
-					joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.0;
+					if (centershot) {
+						joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,2.33;
+						cout << "slowing down for centershot" << endl;				
+					}
+					else{
+						joint_task->_saturation_velocity << M_PI/3,M_PI/3,M_PI/3,M_PI/3,M_PI/2,M_PI/2,3.0;
+					}
 					joint_task->_desired_position(dof-1) = theta_mid - M_PI/4;
 					// joint_task->_desired_velocity(dof-1) = -2.4;
 					// joint_task->_desired_position(dof-1) = sinusoidal_trajectory(shot_angular_velocity, (command_time)/1000.0, theta_mid, swing_angle);
@@ -413,7 +423,7 @@ int main() {
 					// cout<<"commanded position is "<<joint_task->_desired_position(dof-1)<<endl;
 					// cout<<"joint position is "<<robot->_q(dof-1)<<endl;
 					// cout<<"command velocity is "<<joint_task->_desired_velocity(dof-1)<<endl;
-					cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
+					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 					// cout<<"command time is "<<command_time<<endl;
 				}
@@ -472,6 +482,7 @@ int main() {
 
 					joint_task->_use_velocity_saturation_flag = true;
 					cout << "Done Shooting" << endl;
+					centershot = false;
 					//posori_task->reInitializeTask();					
 					posori_task->_desired_position = calculatePointInTrajectory(t);
 					//posori_task->_desired_orientation = AngleAxisd(-M_PI/2, Vector3d::UnitX()) * AngleAxisd(0,  Vector3d::UnitY()) * AngleAxisd(M_PI/2, Vector3d::UnitZ()) * posori_task->_desired_orientation;
@@ -551,6 +562,7 @@ Vector3d calculatePointInTrajectory(double t)
 		-1, 0, 0, y_offset,
 		0, 0, 1, z_offset,
 		0, 0, 0, 1;
+
 	VectorXd xcd = VectorXd::Zero(3);
 	VectorXd xcd_4d = VectorXd::Zero(4); 
 	xcd_4d = T*cue_start_pos; //calculate this - get from redis
@@ -612,6 +624,7 @@ Matrix3d calculateRotationInTrajectory(double t, double psi)
 {
 	Matrix3d rot;
 	Matrix3d home_orientation;
+	// psi = psi + M_PI/8;
 
 	home_orientation <<   0.7360145,  0.6763110,  0.0297644,
   -0.0413102,  0.0009846,  0.9991459,

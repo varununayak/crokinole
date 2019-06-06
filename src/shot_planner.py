@@ -17,7 +17,7 @@ from random import randint
 BOARD_R = 276.225
 STARTING_ARC_R = 255.5875
 ANGLE_EPSILON = 0.01
-MIN_PSI = 0.78 # 45 deg
+MIN_PSI = np.pi/3.5 # 45 deg
 
 '''
     rotation about z axis
@@ -120,7 +120,7 @@ def plan_shot(disks):
     fig = plt.gcf()
     ax = fig.gca()
 
-    ax.add_artist(plt.Circle(np.array([0,0]), BOARD_R, color='k', fill=False))
+    ax.add_artist(plt.Circle(np.array([0,0]), BOARD_R, color=(191/255.0, 128/255.0, 64/255.0), zorder=-1))
 
     ''' TODO: remove cue disk from disks '''
     ''' TODO: speed '''
@@ -153,9 +153,9 @@ def plan_shot(disks):
     post_position = rotate(np.array([0, -80.9625]), 3*np.pi/8)
     for i in range(4):
         post = Disk(post_position[0], post_position[1], 0)
-        post.r = 10
+        post.r = 12
         obstacles.append(post)
-        ax.add_artist(plt.Circle(post.origin, 3, color=post.color, fill=False))
+        ax.add_artist(plt.Circle(post.origin, 3, color='k', fill=False))
         if i == 1:
             post_position = rotate(post_position, 3*np.pi/4)
         else:
@@ -166,7 +166,7 @@ def plan_shot(disks):
     cue_disk = Disk(-156, -186, 3)
     starting_positions = generate_start_pos(STARTING_ARC_R, 50)
 
-    ax.add_artist(plt.Circle(np.array([0, 0]), cue_disk.r, color='w', fill=False))
+    ax.add_artist(plt.Circle(np.array([0, 0]), cue_disk.r, color='k', fill=False))
 
 
     possible_paths = []
@@ -233,14 +233,14 @@ def plan_shot(disks):
         else:
             print "sending failsafe path"
             path = failsafe_path
-        ax.add_artist(plt.Circle(path[0], cue_disk.r, color = cue_disk.color, fill=False))
+        ax.add_artist(plt.Circle(path[0], cue_disk.r, color = cue_disk.color))
         direction = rotate(np.array([150, 0]), path[1])
         plt.quiver(path[0][0], path[0][1], direction[0], direction[1], units='xy', scale=1, width=3, zorder=10)
     else:
         print "sending random viable path"
         path = possible_paths[randint(0, len(possible_paths)-1)]
         cue_disk.origin = path[0]
-        ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color = cue_disk.color, fill=False))
+        ax.add_artist(plt.Circle(cue_disk.origin, cue_disk.r, color = cue_disk.color))
         direction = rotate(np.array([150, 0]), path[1])
         cue_disk.direction = direction/np.linalg.norm(direction)
         plt.quiver(cue_disk.origin[0], cue_disk.origin[1], direction[0], direction[1], units='xy', scale=1, width=3, zorder=10)
@@ -252,7 +252,7 @@ def plan_shot(disks):
     ax.set_xlim(-BOARD_R-50, BOARD_R+50)
     ax.set_ylim(-BOARD_R-50, BOARD_R+50)
     ax.set_aspect('equal')
-    ax.set_axis_bgcolor((0.34, 0.59, 0.95))
+    # ax.set_axis_bgcolor
     plt.show()
 
     return path

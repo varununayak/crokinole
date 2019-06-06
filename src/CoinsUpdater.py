@@ -16,15 +16,10 @@ focus_y = 994.4793
 
 #-----CALIBRATED VALUES HERE-----#
 
-WHITE_THRESHOLD = 100 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 100
-CSD = 5	#colour search distance
 
-
-
-WHITE_THRESHOLD = 175 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 175
-CSD = 7	#colour search distance
+WHITE_THRESHOLD = 165 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 165
+CSD = 8	#colour search distance
 
 
 #pixel center offset
@@ -40,7 +35,7 @@ theta = -0.001
 CUE_POSITION_X = -140
 CUE_POSITION_Y = -183
 
-BOUNDARY_RADIUS = 265
+BOUNDARY_RADIUS = 255
 
 #----------------------------------#
 
@@ -73,7 +68,7 @@ def isCue(X,Y):
 	return False 
 
 def inBoundary(X,Y):
-	return ( ( np.sqrt(X**2 + Y**2) < BOUNDARY_RADIUS) and ( np.sqrt(X**2 + Y**2) > 10) ) 
+	return ( ( np.sqrt(X**2 + Y**2) < BOUNDARY_RADIUS) and ( np.sqrt(X**2 + Y**2) > 8) ) 
 
 def updateBoardCoins():
 	

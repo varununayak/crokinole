@@ -67,9 +67,9 @@ CALIB_ANGLE = True
 #COPY THESE OVER TO CoinsUpdater.py
 
 
-WHITE_THRESHOLD = 175 #average value of pixes threshold to distinguish white from black coins
-BLACK_THRESHOLD = 175
-CSD = 7	#colour search distance
+WHITE_THRESHOLD = 180 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 180
+CSD = 8	#colour search distance
 
 
 #pixel center offset
