@@ -75,7 +75,7 @@ def updateBoardCoins():
 	list_of_coins = [] 
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
-	num_caps = 25
+	num_caps = 80
 	frames = []
 	cap = cv2.VideoCapture(-1)
 
@@ -83,8 +83,10 @@ def updateBoardCoins():
 	        ret, frame = cap.read()
 	        if not ret:
 	            break
-	        else:
+	        else if k>20:
 		        frames.append(frame)
+		    else:
+		    	pass
 
 	for frame in frames:
 		coins = []
@@ -135,6 +137,11 @@ def updateBoardCoins():
 		    			pass #circle not of interest
 
 			list_of_coins.append(coins)
+			cv2.imshow('Crokinole Detected Coins',cimg)
+			print("Hit 'q' in the image window to get the coin positions")
+	        while True:
+	        	if cv2.waitKey(1) & 0xFF == ord('q'):
+	        		break
 
 
 	numbers_of_coins = []

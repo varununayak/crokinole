@@ -86,8 +86,8 @@ def is_viable_path(cue, target, obstacles, plot=False):
         if obstacle != target_cp:
             contactpt_obs = collide(cue_cp3, obstacle)
             if contactpt_obs is not None:
-                if contactpt_obs[1] < 0:
-                    return False, 5
+                # if contactpt_obs[1] < 0:
+                return False, 5
 
     # plot 
     if plot is True:
@@ -131,11 +131,11 @@ def plan_shot(disks):
     for disk in disks:
         if disk.identity != 3:
             obstacles.append(disk)
+            # show all existing disks on plot
+            ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color))
         if disk.identity == 2:
             opponent_disks.append(disk) 
 
-        # show all existing disks on plot
-        ax.add_artist(plt.Circle(disk.origin, disk.r, color=disk.color, fill=False))
 
     if not opponent_disks: # aim for center hole
         default_path = (np.array([0, -STARTING_ARC_R]), np.pi/2)
@@ -143,20 +143,30 @@ def plan_shot(disks):
         return default_path
 
     # add posts as obstacles
-    post_position = rotate(np.array([0, -80.9625]), np.pi/8)
-    for i in range(8):
+    # post_position = rotate(np.array([0, -80.9625]), np.pi/8)
+    # for i in range(8):
+    #     post = Disk(post_position[0], post_position[1], 0)
+    #     post.r = 5
+    #     obstacles.append(post)
+    #     ax.add_artist(plt.Circle(post.origin, post.r, color=post.color, fill=False))
+    #     post_position = rotate(post_position, np.pi/4)
+    post_position = rotate(np.array([0, -80.9625]), 3*np.pi/8)
+    for i in range(4):
         post = Disk(post_position[0], post_position[1], 0)
-        post.r = 5
+        post.r = 10
         obstacles.append(post)
-        ax.add_artist(plt.Circle(post.origin, post.r, color=post.color, fill=False))
-        post_position = rotate(post_position, np.pi/4)
+        ax.add_artist(plt.Circle(post.origin, 3, color=post.color, fill=False))
+        if i == 1:
+            post_position = rotate(post_position, 3*np.pi/4)
+        else:
+            post_position = rotate(post_position, np.pi/4)
 
 
     # initialize cue disk position
     cue_disk = Disk(-156, -186, 3)
     starting_positions = generate_start_pos(STARTING_ARC_R, 50)
 
-    ax.add_artist(plt.Circle(np.array([0, 0]), cue_disk.r, color='k', fill=False))
+    ax.add_artist(plt.Circle(np.array([0, 0]), cue_disk.r, color='w', fill=False))
 
 
     possible_paths = []
@@ -242,6 +252,7 @@ def plan_shot(disks):
     ax.set_xlim(-BOARD_R-50, BOARD_R+50)
     ax.set_ylim(-BOARD_R-50, BOARD_R+50)
     ax.set_aspect('equal')
+    ax.set_axis_bgcolor((0.34, 0.59, 0.95))
     plt.show()
 
     return path

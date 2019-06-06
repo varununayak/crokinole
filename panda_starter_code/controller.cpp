@@ -80,11 +80,11 @@ unsigned long long controller_counter = 0;
 
 //time slots for which pieces of the trajectory are executed
 double t_0 = 0;
-double t_1 = 5;
-double t_2 = 10;
-double t_3 = 15;
-double t_4 = 20;
-const double ee_length = 18.1*0.0254;
+double t_1 = 4;
+double t_2 = 8;
+double t_3 = 12;
+double t_4 = 13;
+const double ee_length = 17.70*0.0254;
 double theta_mid = -1.03+0.2;
 
 Vector4d cue_start_pos;
@@ -193,7 +193,7 @@ int main() {
 
 	double psi =90*M_PI/180.0; //shot angle;
 	double hit_velocity; double swing_angle;
-	double total_time = 0;
+	double total_time = 1;
 	double shot_angular_velocity = 0;
 	double a; 
 	double w; 
@@ -259,7 +259,7 @@ int main() {
 				a = swing_angle/2.0;
 				w = shot_angular_velocity/a;
 				//total_time = M_PI/abs(w)+0.3;
-				total_time = 3;
+				
 			}
 
 		}
@@ -392,7 +392,7 @@ int main() {
 
 				if(t>t_3 && t<t_4){
 					// cout<<"swinging back"<<endl;					
-					joint_task->_desired_position(dof-1) = theta_mid + M_PI/20; //+ swing_angle/2.0;
+					joint_task->_desired_position(dof-1) = theta_mid + M_PI/24; //+ swing_angle/2.0;
 					command_time = 0.0;
 					// cout<<"joint velocity is "<<robot->_dq(dof-1)<<endl;
 				} else if((t-t_4) <= total_time){
@@ -540,7 +540,7 @@ Vector3d calculatePointInTrajectory(double t)
 	double r=20.125/2*0.0254; 
 	
 	double x_offset = 0.7385; //need to calibrate
-	double y_offset = 0.1070+0.02;
+	double y_offset = 0.1070+0.035;
 	double z_offset = 0.3120; //need to calibrate
 	Vector3d xh; xh << 0.2859,0.2787,0.4300;	//calibrate this
 	// Vector3d xc; xc << 0.5,0.35,0.5;

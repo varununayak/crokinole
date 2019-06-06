@@ -4,9 +4,9 @@ import numpy as np
 class Disk:
     
     #identifiers
-    ROBOT = 1 #black
-    HUMAN = 2 #white
-    CUE = 3 #black and in a certain position (predetermined)
+    ROBOT = 1 #white
+    HUMAN = 2 #black
+    CUE = 3 #white and in a certain position (predetermined)
 
     def __init__(self, x_pos = 0.0, y_pos = 0.0, identity = 2):
         self.origin = np.array([x_pos, y_pos])
@@ -14,9 +14,9 @@ class Disk:
         self.direction = np.array([0, 0])
         self.identity = identity
         if identity == 2:
-            self.color = 'r'
-        else:
             self.color = 'k'
+        else:
+            self.color = 'w'
         self.speed = 0
 
     def __eq__(self, other):
@@ -33,6 +33,11 @@ class Disk:
             raise Exception('identifier not recognized, use 1 for ROBOT disk, 2 for HUMAN disk, 3 for CUE disk')
         else:
             self.identity = identity
+            if identity == 2:
+                self.color = 'k'
+            else:
+                self.color = 'w'
+
 
 
 ''' 

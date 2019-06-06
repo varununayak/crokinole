@@ -21,20 +21,26 @@ BLACK_THRESHOLD = 100
 CSD = 5	#colour search distance
 
 
+
+WHITE_THRESHOLD = 175 #average value of pixes threshold to distinguish white from black coins
+BLACK_THRESHOLD = 175
+CSD = 7	#colour search distance
+
+
 #pixel center offset
-offset_pixel_x = -26.45
-offset_pixel_y = -17.5
+offset_pixel_x = -62.5
+offset_pixel_y = -8
 
 #Depth in mm, theta in radian
-Depth = 1220*254/np.sqrt(254**2+9**2)
-theta = -0.0354
+Depth = 1220*254/np.sqrt(251.4**2+2.4**2)
+theta = -0.001
 
 #----------------------------------#
 
 CUE_POSITION_X = -140
 CUE_POSITION_Y = -183
 
-BOUNDARY_RADIUS = 270
+BOUNDARY_RADIUS = 265
 
 #----------------------------------#
 
@@ -61,7 +67,7 @@ def isBlack(img,i):
 	return False
 
 def isCue(X,Y):
-	epsilion = 40 #error in mm
+	epsilion = 50 #error in mm
 	if( np.sqrt(  (X-CUE_POSITION_X)**2 + (Y-CUE_POSITION_Y)**2 ) ) < epsilion:
 		return True
 	return False 
@@ -75,7 +81,7 @@ def updateBoardCoins():
 	#return list_of_coins 
 	#capture the video with a VideoCapture object
 	#argument 0 usually selects your laptop integrated webcam, other number (1,2,3.. try each!) grabs other cams
-	num_caps = 25
+	num_caps = 80
 	frames = []
 	cap = cv2.VideoCapture(-1)
 	time.sleep(2)
@@ -85,7 +91,8 @@ def updateBoardCoins():
 	        if not ret:
 	            break
 	        else:
-		        frames.append(frame)
+	        	if k>20:
+		    		frames.append(frame)
 
 	for frame in frames:
 		coins = []
@@ -110,13 +117,17 @@ def updateBoardCoins():
 		    			Xunrot = X
 		    			X = np.cos(theta)*Xunrot - np.sin(theta)*Y
 		    			Y = np.sin(theta)*Xunrot + np.cos(theta)*Y
-		    			if(inBoundary(X,Y)):
-			    			coin.set_position(X,Y)
-			    			if(isCue(X,Y)):
-			    				coin.set_identity(3)
-			    			else:
-			    				coin.set_identity(1)	    				
+		    			if(isCue(X,Y)):
+		    				coin.set_position(X,Y)
+			    			coin.set_identity(3)
 			    			coins.append(coin)
+		    			elif(inBoundary(X,Y)):
+			    			coin.set_position(X,Y)
+			    			coin.set_identity(1)
+			    			coins.append(coin)
+			    		else:
+			    			pass	
+			    		
 		    		elif isBlack(img,i):#coin is black in colour
 		    			cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)	#red colour center marker for black (opponent)
 		    			#get the pixel value of the center of the coin
