@@ -6,7 +6,7 @@ snapshot and returns a list of coins present in that snapshot
 
 from calibrate_camera import CSD	# color search distance
 from calibrate_camera import isBlack, isWhite
-from disk import *
+from coin import *
 import numpy as np
 import cv2
 import time
@@ -76,7 +76,7 @@ def updateBoardCoins():
             img, cv2.HOUGH_GRADIENT, 1.9, 10, param1=50, param2=30, minRadius=8, maxRadius=12)
         if (circles is not None):
             for i in circles[0, :]:
-                coin = Disk()  # initialize the coin class
+                coin = Coin()  # initialize the coin class
                 if isWhite(img, i):  # coin is white in colour
                     # blue colour center marker for our coin
                     cv2.circle(cimg, (i[0], i[1]), 2, (255, 0, 0), 3)

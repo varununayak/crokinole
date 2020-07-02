@@ -62,7 +62,7 @@ CALIBRATING_ANGLE = True
 
 #-------CALIBRATION VALUES--------#
 
-# COPY THESE OVER TO CoinsUpdater.py
+# COPY THESE OVER TO coins_updater.py
 
 
 # average value of pixes threshold to distinguish white from black coins

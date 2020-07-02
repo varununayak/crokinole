@@ -11,8 +11,8 @@ import redis
 import ast
 import time
 
-from CoinsUpdater import *
-from disk import *
+from coins_updater import *
+from coin import *
 from shot_planner import *
 
 MODE_CHANGE_KEY = "modechange"
