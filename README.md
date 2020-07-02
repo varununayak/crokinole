@@ -9,7 +9,6 @@ Control and state machine software for the crokinole project i.e. a 7-DoF torque
 ![](Videos/fullsim.gif)
 
 ## Dependencies
--------------
 1. `cmake` >= 2.8
 2. `g++` with `-std >= c++11`
 3. SAI2 libraries
@@ -24,7 +23,6 @@ Control and state machine software for the crokinole project i.e. a 7-DoF torque
 6. `redis`
 
 ## Build Instructions
--------------
 ```
 mkdir build && cd build
 cmake .. && make -j$(nproc)
