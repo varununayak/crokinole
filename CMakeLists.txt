@@ -68,5 +68,5 @@ set(CS225A_COMMON_LIBRARIES
 
 set (CS225A_BINARY_DIR                  ${PROJECT_SOURCE_DIR}/bin)
 
-add_subdirectory(panda_starter_code)
+add_subdirectory(panda_interface)
 

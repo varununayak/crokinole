@@ -4,7 +4,7 @@ include_directories(${SAI2-PRIMITIVES_INCLUDE_DIRS})
 add_definitions(${SAI2-PRIMITIVES_DEFINITIONS})
 
 # create an executable
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CS225A_BINARY_DIR}/panda_starter_code)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CS225A_BINARY_DIR}/panda_interface)
 ADD_EXECUTABLE (controller_panda controller.cpp ${CS225A_COMMON_SOURCE})
 ADD_EXECUTABLE (simviz_panda simviz.cpp ${CS225A_COMMON_SOURCE})
 ADD_EXECUTABLE (set_orientation_panda set_orientation_controller.cpp ${CS225A_COMMON_SOURCE})

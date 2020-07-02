@@ -1,6 +1,10 @@
-// This example application loads a URDF world file and simulates two robots
-// with physics and contact in a Dynamics3D virtual world. A graphics model of it is also shown using 
-// Chai3D.
+"""
+Prints out the pose and joint configuration of the robot in the world frame,
+used for calibration purposes
+No control input is applied
+
+@authors: Varun Nayak
+"""
 
 #include "Sai2Model.h"
 #include "redis/RedisClient.h"
